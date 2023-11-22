@@ -127,7 +127,7 @@ if __name__ == '__main__':
     parser.add_argument('--training_data', type=str, help='csv file of the training data')
     parser.add_argument('--testing_data_list', nargs='+', type=str, help='List of testing data paths')
     parser.add_argument('--model_path', type=str, default='my_model.h5', help='path of .h5 file of model')
-    parser.add_argument('--work_dir', type=str, default='AutoEncoder', help='create new directory to save result')
+    parser.add_argument('--work_dir', type=str, default='AE', help='create new directory to save result')
 
 
     # 解析命令行参数

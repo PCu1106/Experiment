@@ -78,8 +78,8 @@ if __name__ == '__main__':
     for i in range(1, 10):
         knn_model = KNN(k = i)
         if args.training_data:
-                knn_model.load_data(args.training_data)
-                knn_model.train_model(model_path)
+            knn_model.load_data(args.training_data)
+            knn_model.train_model(model_path)
         elif args.testing_data_list:
             testing_data_path_list = args.testing_data_list
             for testing_data_path in testing_data_path_list:
