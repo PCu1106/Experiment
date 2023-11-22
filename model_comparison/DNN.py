@@ -19,11 +19,22 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.callbacks import ModelCheckpoint
 import os
 
+scripted_walk = [
+            'one_way_walk_1','one_way_walk_2','one_way_walk_3','one_way_walk_4','one_way_walk_5','one_way_walk_6','one_way_walk_7','one_way_walk_8',
+            'round_trip_walk_1', 'round_trip_walk_2','round_trip_walk_3','round_trip_walk_4'
+        ]       
+stationary = ['stationary_1']
+freewalk = [
+    'freewalk_1','freewalk_2','freewalk_3','freewalk_4','freewalk_5','freewalk_6','freewalk_7','freewalk_8','freewalk_9'
+]
+walk_class = [('scripted_walk', scripted_walk), ('stationary', stationary), ('freewalk', freewalk)]
+
+
 class DNN:
-    def __init__(self, input_size, output_size, hidden_sizes):
-        if not os.path.exists('DNN'):
-            os.makedirs('DNN')
-        os.chdir('DNN')
+    def __init__(self, input_size, output_size, hidden_sizes, work_dir):
+        if not os.path.exists(work_dir):
+            os.makedirs(work_dir)
+        os.chdir(work_dir)
         self.input_size = input_size
         self.output_size = output_size
         self.hidden_sizes = hidden_sizes
@@ -114,35 +125,21 @@ class DNN:
         self.model = tf.keras.models.load_model(model_path)
 
     def generate_predictions(self, testing_data_path):
-        for walk_str, walk_list in self.walk_class:
-            prediction_results = {
-                'label': [],
-                'pred': []
-            }
-            for walk in walk_list:
-                data_path = f"{testing_data_path}\\{walk}.csv"
-
-                # 加載數據
-                self.load_data(data_path, shuffle=False)
-
-                # 進行預測
-                predicted_labels = self.predict(self.X)
-                predicted_labels = np.argmax(predicted_labels, axis=1) + 1  # 加 1 是为了将索引转换为 1 到 41 的标签
-                label = np.argmax(self.y, axis=1) + 1
-                # 將預測結果保存到 prediction_results 中
-                prediction_results['label'].extend(label.tolist())
-                prediction_results['pred'].extend(predicted_labels.tolist())
-            df = pd.DataFrame(prediction_results)
-            
-            split_path = testing_data_path.split('\\')
-            predictions_dir = f'predictions/{split_path[3]}'
-            os.makedirs(predictions_dir, exist_ok=True)
-            df.to_csv(os.path.join(predictions_dir, f'{walk_str}_predictions.csv'), index=False)
-
-    def test(self, testing_data_path_list, model_path):
         self.load_model(model_path)
-        for testing_data_path in testing_data_path_list:
-            self.generate_predictions(testing_data_path)
+        prediction_results = {
+            'label': [],
+            'pred': []
+        }
+        # 進行預測
+        predicted_labels = self.predict(self.X)
+        predicted_labels = np.argmax(predicted_labels, axis=1) + 1  # 加 1 是为了将索引转换为 1 到 41 的标签
+        label = np.argmax(self.y, axis=1) + 1
+        # 將預測結果保存到 prediction_results 中
+        prediction_results['label'].extend(label.tolist())
+        prediction_results['pred'].extend(predicted_labels.tolist())
+        
+        return pd.DataFrame(prediction_results)
+
 
 if __name__ == '__main__':
     # 创建命令行参数解析器
@@ -152,6 +149,8 @@ if __name__ == '__main__':
     parser.add_argument('--training_data', type=str, help='csv file of the training data')
     parser.add_argument('--testing_data_list', nargs='+', type=str, help='List of testing data paths')
     parser.add_argument('--model_path', type=str, default='my_model.h5', help='path of .h5 file of model')
+    parser.add_argument('--work_dir', type=str, default='DNN', help='create new directory to save result')
+
 
     # 解析命令行参数
     args = parser.parse_args()
@@ -161,12 +160,23 @@ if __name__ == '__main__':
     input_size = 7
     output_size = 41
     hidden_sizes = [8, 16, 32]
-    dnn_model = DNN(input_size, output_size, hidden_sizes)
+    dnn_model = DNN(input_size, output_size, hidden_sizes, args.work_dir)
     if args.training_data:
         dnn_model.load_data(args.training_data)
-        dnn_model.train_model(model_path, epochs=100)
+        dnn_model.train_model(model_path, epochs=500)
     elif args.testing_data_list:
         testing_data_path_list = args.testing_data_list
-        dnn_model.test(testing_data_path_list, model_path)
+        for testing_data_path in testing_data_path_list:
+            for walk_str, walk_list in walk_class:
+                prediction_results = pd.DataFrame()
+                for walk in walk_list:
+                    # 加載數據
+                    dnn_model.load_data(f"{testing_data_path}\\{walk}.csv")
+                    results = dnn_model.generate_predictions(model_path)
+                    prediction_results = pd.concat([prediction_results, results], ignore_index=True)
+                split_path = testing_data_path.split('\\')
+                predictions_dir = f'predictions/{split_path[3]}'
+                os.makedirs(predictions_dir, exist_ok=True)
+                prediction_results.to_csv(os.path.join(predictions_dir, f'{walk_str}_predictions.csv'), index=False)
     else:
         print('Please specify --training_data or --test option.')
