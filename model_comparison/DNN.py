@@ -18,17 +18,7 @@ import tensorflow as tf
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.callbacks import ModelCheckpoint
 import os
-
-scripted_walk = [
-            'one_way_walk_1','one_way_walk_2','one_way_walk_3','one_way_walk_4','one_way_walk_5','one_way_walk_6','one_way_walk_7','one_way_walk_8',
-            'round_trip_walk_1', 'round_trip_walk_2','round_trip_walk_3','round_trip_walk_4'
-        ]       
-stationary = ['stationary_1']
-freewalk = [
-    'freewalk_1','freewalk_2','freewalk_3','freewalk_4','freewalk_5','freewalk_6','freewalk_7','freewalk_8','freewalk_9'
-]
-walk_class = [('scripted_walk', scripted_walk), ('stationary', stationary), ('freewalk', freewalk)]
-
+from walk_definitions import walk_class
 
 class DNN:
     def __init__(self, input_size, output_size, hidden_sizes, work_dir):
@@ -40,15 +30,6 @@ class DNN:
         self.hidden_sizes = hidden_sizes
         self.model = self.build_model()
         self.history = None
-        self.scripted_walk = [
-            'one_way_walk_1','one_way_walk_2','one_way_walk_3','one_way_walk_4','one_way_walk_5','one_way_walk_6','one_way_walk_7','one_way_walk_8',
-            'round_trip_walk_1', 'round_trip_walk_2','round_trip_walk_3','round_trip_walk_4'
-        ]       
-        self.stationary = ['stationary_1']
-        self.freewalk = [
-            'freewalk_1','freewalk_2','freewalk_3','freewalk_4','freewalk_5','freewalk_6','freewalk_7','freewalk_8','freewalk_9'
-        ]
-        self.walk_class = [('scripted_walk', self.scripted_walk), ('stationary', self.stationary), ('freewalk', self.freewalk)]
 
     def load_data(self, training_data_path, shuffle = True):
         data = pd.read_csv(training_data_path)
@@ -171,7 +152,7 @@ if __name__ == '__main__':
                 prediction_results = pd.DataFrame()
                 for walk in walk_list:
                     # 加載數據
-                    dnn_model.load_data(f"{testing_data_path}\\{walk}.csv")
+                    dnn_model.load_data(f"{testing_data_path}\\{walk}.csv", shuffle=False)
                     results = dnn_model.generate_predictions(model_path)
                     prediction_results = pd.concat([prediction_results, results], ignore_index=True)
                 split_path = testing_data_path.split('\\')

@@ -17,16 +17,7 @@ import joblib
 import os
 import matplotlib.pyplot as plt
 import argparse
-
-scripted_walk = [
-            'one_way_walk_1','one_way_walk_2','one_way_walk_3','one_way_walk_4','one_way_walk_5','one_way_walk_6','one_way_walk_7','one_way_walk_8',
-            'round_trip_walk_1', 'round_trip_walk_2','round_trip_walk_3','round_trip_walk_4'
-        ]       
-stationary = ['stationary_1']
-freewalk = [
-    'freewalk_1','freewalk_2','freewalk_3','freewalk_4','freewalk_5','freewalk_6','freewalk_7','freewalk_8','freewalk_9'
-]
-walk_class = [('scripted_walk', scripted_walk), ('stationary', stationary), ('freewalk', freewalk)]
+from walk_definitions import walk_class
 
 class KNN:
     def __init__(self, k=5):
