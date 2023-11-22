@@ -39,7 +39,7 @@ class DNN:
         print(X.shape)
 
         # 进行one-hot编码
-        one_hot_y = to_categorical(y_adjusted, num_classes=output_size)
+        one_hot_y = to_categorical(y_adjusted, num_classes=self.output_size)
 
         #shuffle
         indices = np.arange(y.shape[0])
@@ -105,7 +105,7 @@ class DNN:
     def load_model(self, model_path):
         self.model = tf.keras.models.load_model(model_path)
 
-    def generate_predictions(self, testing_data_path):
+    def generate_predictions(self, model_path):
         self.load_model(model_path)
         prediction_results = {
             'label': [],

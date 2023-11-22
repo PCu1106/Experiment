@@ -2,6 +2,7 @@
 python .\AE_Integration.py \
     --training_data D:\Experiment\data\231116\GalaxyA51\wireless_training.csv \
     --AE_model_path 231116.h5 \
+    --model KNN \
     --model_path 231116.pkl
 
 python .\AE_Integration.py \
@@ -9,11 +10,13 @@ python .\AE_Integration.py \
                     D:\Experiment\data\220318\GalaxyA51\routes \
                     D:\Experiment\data\231117\GalaxyA51\routes \
     --AE_model_path 231116.h5 \
+    --model KNN \
     --model_path 231116.pkl
 '''
 
 from AutoEncoder import AutoEncoder
 from KNN import KNN
+from DNN import DNN
 import argparse
 import os
 import pandas as pd
@@ -31,6 +34,7 @@ if __name__ == '__main__':
     parser.add_argument('--AE_model_path', type=str, default='my_model.h5', help='path of .h5 file of AE model')
     parser.add_argument('--model', type=str, help='the model contating after AE')
     parser.add_argument('--model_path', type=str, default='my_model.h5', help='path of contating model')
+    parser.add_argument('--work_dir', type=str, help='create new directory to save result')
     
 
     # 解析命令行参数
@@ -74,3 +78,31 @@ if __name__ == '__main__':
                 print('Please specify --training_data or --test option.')
 
             os.chdir('..')
+
+    
+    if args.model == 'DNN':
+        input_size = 8
+        output_size = 41
+        hidden_sizes = [8, 16, 32]
+        dnn_model = DNN(input_size, output_size, hidden_sizes, 'DNN')
+        if args.training_data:
+            dnn_model.load_data(args.training_data)
+            dnn_model.X = encoder.predict(dnn_model.X)
+            dnn_model.train_model(model_path, epochs=500)
+        elif args.testing_data_list:
+            testing_data_path_list = args.testing_data_list
+            for testing_data_path in testing_data_path_list:
+                for walk_str, walk_list in walk_class:
+                    prediction_results = pd.DataFrame()
+                    for walk in walk_list:
+                        # 加載數據
+                        dnn_model.load_data(f"{testing_data_path}\\{walk}.csv", shuffle=False)
+                        dnn_model.X = encoder.predict(dnn_model.X)
+                        results = dnn_model.generate_predictions(model_path)
+                        prediction_results = pd.concat([prediction_results, results], ignore_index=True)
+                    split_path = testing_data_path.split('\\')
+                    predictions_dir = f'predictions/{split_path[3]}'
+                    os.makedirs(predictions_dir, exist_ok=True)
+                    prediction_results.to_csv(os.path.join(predictions_dir, f'{walk_str}_predictions.csv'), index=False)
+        else:
+            print('Please specify --training_data or --test option.')
