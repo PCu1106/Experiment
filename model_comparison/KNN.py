@@ -11,11 +11,9 @@ python .\KNN.py \
 '''
 
 import pandas as pd
-import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 import joblib
 import os
-import matplotlib.pyplot as plt
 import argparse
 from walk_definitions import walk_class
 

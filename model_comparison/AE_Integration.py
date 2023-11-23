@@ -44,7 +44,7 @@ if __name__ == '__main__':
     model_path = args.model_path
 
     input_size = 7
-    code_size = 8
+    code_size = 4
     ae_model = AutoEncoder(input_size, code_size)
     ae_model.load_model(AE_model_path)
     encoder = ae_model.getEncoder()
@@ -84,7 +84,7 @@ if __name__ == '__main__':
         input_size = 8
         output_size = 41
         hidden_sizes = [8, 16, 32]
-        dnn_model = DNN(input_size, output_size, hidden_sizes, 'DNN')
+        dnn_model = DNN(input_size, output_size, hidden_sizes, args.work_dir)
         if args.training_data:
             dnn_model.load_data(args.training_data)
             dnn_model.X = encoder.predict(dnn_model.X)

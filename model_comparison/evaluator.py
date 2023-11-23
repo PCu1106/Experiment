@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.callbacks import ModelCheckpoint
+from walk_definitions import date2domain
 
 class Evaluator:
     def __init__(self):
@@ -81,7 +82,8 @@ class Evaluator:
         for predicion_data_path in predicion_data_path_list:
             mde_list.append(self.calculate_mde(f'predictions\\{predicion_data_path}'))
             split_path = predicion_data_path.split('\\')
-            label_list.append(f'{split_path[-1]}')
+            label = date2domain[f'{split_path[-1]}']
+            label_list.append(label)
         # X轴标签
         labels = ["scripted_walk", "stationary", "freewalk"]
 
@@ -130,7 +132,7 @@ if __name__ == '__main__':
 
     os.chdir(args.directory)
     predicion_data_path_list = os.listdir('predictions/')
-    total_model_name = f'{args.model_name} {args.directory}'
+    total_model_name = date2domain[f'{args.model_name}'] + f' {args.directory}'
     evaluator = Evaluator()
     evaluator.test(predicion_data_path_list, total_model_name)
 

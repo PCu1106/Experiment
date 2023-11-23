@@ -40,11 +40,13 @@ class DistributionComparator:
         hist_similarity = cv2.compareHist(hist1, hist2, cv2.HISTCMP_CORREL)
         return hist_similarity
     
-    def plot_avg_rssi(self, fig_name):
+    def plot_avg_rssi(self, fig_name, skip=[]):
         ap_values1 = {}  # 存储每个AP的RSSI平均值
         ap_values2 = {}
         mae = 0
         for ap_id in range(1, 8):  # 7个AP，根据需要调整范围
+            if ap_id in skip:
+                continue
             ap_data1 = self.data1[self.data1['UUID'].str.endswith(str(ap_id))]
             ap_data2 = self.data2[self.data2['UUID'].str.endswith(str(ap_id))]
             
@@ -65,7 +67,7 @@ class DistributionComparator:
         plt.savefig(fig_name)
         plt.clf()
 
-        return mae/7
+        return mae/(7-len(skip))
     
     
 
@@ -140,6 +142,18 @@ if __name__ == '__main__':
         ("D:\\Experiment\\data_change_env\\original2 11011125\\U11\\BLE_data.csv", "D:\\Experiment\\data_change_env\\shading objects1 11011155\\U11\\BLE_data.csv"),
         ("D:\\Experiment\\data_change_env\\original2 11011125\\U11\\BLE_data.csv", "D:\\Experiment\\data_change_env\\shading objects2 11011200\\U11\\BLE_data.csv")
     ]
+
+    # all pair of AP6, 7 broken & repositioned
+    compare_file_pair5 = [
+        ("D:\\Experiment\\data_change_env\\original1 11011120\\sharp4025\\20231031_data_BLE.csv", "D:\\Experiment\\data_change_env\\AP67broken_repositioned1 11052118\\sharp4025\\20231105_data_BLE.csv"),
+        ("D:\\Experiment\\data_change_env\\original1 11011120\\sharp4025\\20231031_data_BLE.csv", "D:\\Experiment\\data_change_env\\AP67broken_repositioned2 11052122\\sharp4025\\20231105_data_BLE.csv"),
+        ("D:\\Experiment\\data_change_env\\original2 11011125\\sharp4025\\20231031_data_BLE.csv", "D:\\Experiment\\data_change_env\\AP67broken_repositioned1 11052118\\sharp4025\\20231105_data_BLE.csv"),
+        ("D:\\Experiment\\data_change_env\\original2 11011125\\sharp4025\\20231031_data_BLE.csv", "D:\\Experiment\\data_change_env\\AP67broken_repositioned2 11052122\\sharp4025\\20231105_data_BLE.csv"),
+        ("D:\\Experiment\\data_change_env\\original1 11011120\\U11\\BLE_data.csv", "D:\\Experiment\\data_change_env\\AP67broken_repositioned1 11052118\\U11\\BLE_data.csv"),
+        ("D:\\Experiment\\data_change_env\\original1 11011120\\U11\\BLE_data.csv", "D:\\Experiment\\data_change_env\\AP67broken_repositioned2 11052122\\U11\\BLE_data.csv"),
+        ("D:\\Experiment\\data_change_env\\original2 11011125\\U11\\BLE_data.csv", "D:\\Experiment\\data_change_env\\AP67broken_repositioned1 11052118\\U11\\BLE_data.csv"),
+        ("D:\\Experiment\\data_change_env\\original2 11011125\\U11\\BLE_data.csv", "D:\\Experiment\\data_change_env\\AP67broken_repositioned2 11052122\\U11\\BLE_data.csv")
+    ]
     
     bins = 60
 
@@ -170,7 +184,12 @@ if __name__ == '__main__':
             similarity = comparator.compare_histograms()
             print(f"Histogram Similarity: {similarity}")
         if args.APmae:
-            mae = comparator.plot_avg_rssi(f'AP_avg_rssi {env_list[i]}')
+            if env_list[i] == "AP34broken":
+                mae = comparator.plot_avg_rssi(f'AP_avg_rssi {env_list[i]}', skip = [3, 4])
+            elif env_list[i] == "AP67broken_repositioned":
+                mae = comparator.plot_avg_rssi(f'AP_avg_rssi {env_list[i]}', skip = [6, 7])
+            else:
+                mae = comparator.plot_avg_rssi(f'AP_avg_rssi {env_list[i]}')
             print(f"AP MAE: {mae}")
 
     for i, (file1, file2) in enumerate(compare_file_pair3):
@@ -193,4 +212,15 @@ if __name__ == '__main__':
             print(f"Histogram Similarity: {similarity}")
         if args.APmae:
             mae = comparator.plot_avg_rssi(f'AP_avg_rssi shading object {i}')
+            print(f"AP MAE: {mae}")
+
+    for i, (file1, file2) in enumerate(compare_file_pair5):
+        comparator = DistributionComparator(file1, file2, bins)
+        print(f"AP6, 7 broken & repositioned {i}", end=' ')
+        if args.histogram:
+            comparator.plot_histograms(f"AP6, 7 broken & repositioned {i}")
+            similarity = comparator.compare_histograms()
+            print(f"Histogram Similarity: {similarity}")
+        if args.APmae:
+            mae = comparator.plot_avg_rssi(f'AP_avg_rssi AP6, 7 broken & repositioned {i}', skip = [6, 7])
             print(f"AP MAE: {mae}")
