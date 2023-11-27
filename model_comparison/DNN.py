@@ -21,7 +21,7 @@ import os
 from walk_definitions import walk_class
 
 class DNN:
-    def __init__(self, input_size, output_size, hidden_sizes, work_dir):
+    def __init__(self, input_size=7, output_size=41, hidden_sizes=[8, 16, 32], work_dir='.'):
         if not os.path.exists(work_dir):
             os.makedirs(work_dir)
         os.chdir(work_dir)
@@ -104,6 +104,26 @@ class DNN:
     
     def load_model(self, model_path):
         self.model = tf.keras.models.load_model(model_path)
+
+    def build_transfer_model(self, freeze_layers=None):
+        # 如果未指定 freeze_layers，則預設全部可訓練 (weight initialization)
+        if freeze_layers is None:
+            freeze_layers = 0
+
+        # 凍結指定數量的層，如果freeze_layers超過上限，會直接變成到最後一層
+        for layer in self.model.layers[:freeze_layers]:
+            layer.trainable = False
+        for layer in self.model.layers[freeze_layers:]:
+            layer.trainable = True
+
+        transfer_model = tf.keras.Sequential()
+        transfer_model.add(self.model)
+
+        # 編譯模型
+        transfer_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+        self.model = transfer_model
+
 
     def generate_predictions(self, model_path):
         self.load_model(model_path)

@@ -154,6 +154,11 @@ if __name__ == '__main__':
         ("D:\\Experiment\\data_change_env\\original2 11011125\\U11\\BLE_data.csv", "D:\\Experiment\\data_change_env\\AP67broken_repositioned1 11052118\\U11\\BLE_data.csv"),
         ("D:\\Experiment\\data_change_env\\original2 11011125\\U11\\BLE_data.csv", "D:\\Experiment\\data_change_env\\AP67broken_repositioned2 11052122\\U11\\BLE_data.csv")
     ]
+
+    compare_file_pair6 = [
+        ("D:\\Experiment\\data\\231116\\GalaxyA51\\BLE_data.csv", "D:\\Experiment\\data\\220318\\GalaxyA51\\BLE_data.csv"),
+        ("D:\\Experiment\\data\\231116\\GalaxyA51\\BLE_data.csv", "D:\\Experiment\\data\\231117\\GalaxyA51\\BLE_data.csv")
+    ]
     
     bins = 60
 
@@ -223,4 +228,15 @@ if __name__ == '__main__':
             print(f"Histogram Similarity: {similarity}")
         if args.APmae:
             mae = comparator.plot_avg_rssi(f'AP_avg_rssi AP6, 7 broken & repositioned {i}', skip = [6, 7])
+            print(f"AP MAE: {mae}")
+
+    for i, (file1, file2) in enumerate(compare_file_pair6):
+        comparator = DistributionComparator(file1, file2, bins)
+        print(f"target domain{i}", end=' ')
+        if args.histogram:
+            comparator.plot_histograms(f"target domain{i}")
+            similarity = comparator.compare_histograms()
+            print(f"Histogram Similarity: {similarity}")
+        if args.APmae:
+            mae = comparator.plot_avg_rssi(f"AP_avg_rssi target domain{i}")
             print(f"AP MAE: {mae}")

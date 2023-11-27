@@ -132,7 +132,7 @@ if __name__ == '__main__':
 
     os.chdir(args.directory)
     predicion_data_path_list = os.listdir('predictions/')
-    total_model_name = date2domain[f'{args.model_name}'] + f' {args.directory}'
+    total_model_name = f'{args.model_name}' + f' {args.directory}'
     evaluator = Evaluator()
     evaluator.test(predicion_data_path_list, total_model_name)
 
