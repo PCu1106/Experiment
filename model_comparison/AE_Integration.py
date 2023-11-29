@@ -17,6 +17,7 @@ python .\AE_Integration.py \
 from AutoEncoder import AutoEncoder
 from KNN import KNN
 from DNN import DNN
+from RandomForest import RandomForest
 import argparse
 import os
 import pandas as pd
@@ -106,3 +107,30 @@ if __name__ == '__main__':
                     prediction_results.to_csv(os.path.join(predictions_dir, f'{walk_str}_predictions.csv'), index=False)
         else:
             print('Please specify --training_data or --test option.')
+
+    if args.model == 'RF':
+        for i in range(1, 10):
+            rf_model = RandomForest(max_depth=i)
+            if args.training_data:
+                rf_model.load_data(args.training_data)
+                rf_model.X = encoder.predict(rf_model.X)
+                rf_model.train_model(model_path)
+            elif args.testing_data_list:
+                testing_data_path_list = args.testing_data_list
+                for testing_data_path in testing_data_path_list:
+                    for walk_str, walk_list in walk_class:
+                        prediction_results = pd.DataFrame()
+                        for walk in walk_list:
+                            # 加載數據
+                            rf_model.load_data(f"{testing_data_path}\\{walk}.csv")
+                            rf_model.X = encoder.predict(rf_model.X)
+                            results = rf_model.generate_predictions(model_path)
+                            prediction_results = pd.concat([prediction_results, results], ignore_index=True)
+                        split_path = testing_data_path.split('\\')
+                        predictions_dir = f'predictions/{split_path[3]}'
+                        os.makedirs(predictions_dir, exist_ok=True)
+                        prediction_results.to_csv(os.path.join(predictions_dir, f'{walk_str}_predictions.csv'), index=False)
+            else:
+                print('Please specify --training_data or --test option.')
+
+            os.chdir('..')

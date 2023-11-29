@@ -118,6 +118,7 @@ class Evaluator:
 
         # 保存图像到文件
         plt.savefig("mde_comparison.png")
+        plt.clf()
 
 
 # 使用示例

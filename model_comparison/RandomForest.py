@@ -74,10 +74,10 @@ if __name__ == '__main__':
     model_path = args.model_path
     # 在根据参数来执行相应的操作
     for i in range(10, 20):
-        knn_model = RandomForest(max_depth=i)
+        rf_model = RandomForest(max_depth=i)
         if args.training_data:
-            knn_model.load_data(args.training_data)
-            knn_model.train_model(model_path)
+            rf_model.load_data(args.training_data)
+            rf_model.train_model(model_path)
         elif args.testing_data_list:
             testing_data_path_list = args.testing_data_list
             for testing_data_path in testing_data_path_list:
@@ -85,8 +85,8 @@ if __name__ == '__main__':
                     prediction_results = pd.DataFrame()
                     for walk in walk_list:
                         # 加載數據
-                        knn_model.load_data(f"{testing_data_path}\\{walk}.csv")
-                        results = knn_model.generate_predictions(model_path)
+                        rf_model.load_data(f"{testing_data_path}\\{walk}.csv")
+                        results = rf_model.generate_predictions(model_path)
                         prediction_results = pd.concat([prediction_results, results], ignore_index=True)
                     split_path = testing_data_path.split('\\')
                     predictions_dir = f'predictions/{split_path[3]}'
