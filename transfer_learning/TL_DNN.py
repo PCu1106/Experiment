@@ -23,17 +23,18 @@ import argparse
 import os
 import matplotlib.pyplot as plt
 
-def plot_lines(freeze_layers, target_domain1, source_domain, target_domain2):
+def plot_lines(freeze_layers, target_domain1, source_domain, target_domain2, output_path, title):
     plt.plot(freeze_layers, target_domain1, marker='o', label='Target Domain1', color='blue')
     plt.plot(freeze_layers, source_domain, marker='o', label='Source Domain', color='orange')
     plt.plot(freeze_layers, target_domain2, marker='o', label='Target Domain2', color='green')
 
     plt.xlabel('Freeze layers')
     plt.ylabel('MDE (m)')
-    plt.title('MDE vs. Freeze layers')
+    plt.title(title)
     plt.legend()
     plt.grid(True)
-    plt.show()
+    plt.ylim(0, 3)
+    plt.savefig(output_path)
 
 
 if __name__ == '__main__':
@@ -54,11 +55,16 @@ if __name__ == '__main__':
     base_model_path = args.base_model_path
     model_path = args.model_path
 
-    for freeze_layers in range(0, 5):
-        dnn_model = DNN(work_dir=f'{args.work_dir}_{freeze_layers}')
+    target_domain1_result = []
+    source_domain_reult = []
+    target_domain2_result = []
+
+    freeze_layers = range(0, 5)
+    for freeze_layer in freeze_layers:
+        dnn_model = DNN(work_dir=f'{args.work_dir}\\TL_DNN_{freeze_layer}')
         if args.training_data:
             dnn_model.load_model(base_model_path)
-            dnn_model.build_transfer_model(freeze_layers = freeze_layers)
+            dnn_model.build_transfer_model(freeze_layers = freeze_layer)
             dnn_model.load_data(args.training_data)
             dnn_model.train_model(model_path, epochs=500)
         elif args.testing_data_list:
@@ -77,7 +83,13 @@ if __name__ == '__main__':
                     prediction_results.to_csv(os.path.join(predictions_dir, f'{walk_str}_predictions.csv'), index=False)
             predicion_data_path_list = os.listdir('predictions/')
             evaluator = Evaluator()
-            evaluator.test(predicion_data_path_list, f'{args.work_dir}_{freeze_layers}')
+            mde_list = evaluator.test(predicion_data_path_list, f'{args.work_dir}_{freeze_layer}')
+            target_domain1_result.append(mde_list[0][1])
+            source_domain_reult.append(mde_list[1][1])
+            target_domain2_result.append(mde_list[2][1])
         else:
             print('Please specify --training_data or --test option.')
         os.chdir('..\\..')
+
+    if args.testing_data_list:
+        plot_lines(freeze_layers, target_domain1_result, source_domain_reult, target_domain2_result, f'{args.work_dir}\\Freeze_Layer.png', 'Source_domain_to_Target_domain2')

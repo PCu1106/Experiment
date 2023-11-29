@@ -1,5 +1,5 @@
 '''
-python .\evaluator.py --model 231116 --directory DNN
+python .\evaluator.py --model_name 231116 --directory DNN
 '''
 
 import argparse
@@ -74,7 +74,7 @@ class Evaluator:
                 writer.writerow(prob)
         print(total_mde)
         print(f'average MDE: {sum(total_mde) / len(total_mde)}')
-        return total_mde
+        return total_mde # [scripted_walk mde, stationary mde, freewalk mde]
     
     def test(self, predicion_data_path_list, total_model_name):
         mde_list = []
@@ -119,6 +119,8 @@ class Evaluator:
         # 保存图像到文件
         plt.savefig("mde_comparison.png")
         plt.clf()
+
+        return mde_list # [[file1 three mde], [file2 three mde], ...]
 
 
 # 使用示例
