@@ -14,7 +14,7 @@ python .\TL_DNN.py \
 '''
 
 import sys
-sys.path.append('..\\model_comparison')
+sys.path.append('..\\..\\model_comparison')
 from DNN import DNN
 from walk_definitions import walk_class
 from evaluator import Evaluator

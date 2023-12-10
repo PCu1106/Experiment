@@ -1,3 +1,19 @@
+'''
+python .\DANN.py \
+    --training_source_domain_data D:\Experiment\data\231116\GalaxyA51\wireless_training.csv \
+    --training_target_domain_data D:\Experiment\data\220318\GalaxyA51\wireless_training.csv \
+    --model_path 231116_220318.h5 \
+    --work_dir 231116_220318\2_1
+python .\DANN.py \
+    --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes \
+                        D:\Experiment\data\220318\GalaxyA51\routes \
+                        D:\Experiment\data\231117\GalaxyA51\routes \
+    --model_path 231116_220318.h5 \
+    --work_dir 231116_220318\2_1
+python ..\..\model_comparison\evaluator.py \
+    --model_name 231116_220318 \
+    --directory 231116_220318\2_1
+'''
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers, models
@@ -6,7 +22,11 @@ import pandas as pd
 import argparse
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.utils import to_categorical
-
+import os
+import sys
+sys.path.append('..\\..\\model_comparison')
+from walk_definitions import walk_class
+from evaluator import Evaluator
 
 @tf.custom_gradient
 def GradientReversalOperator(x):
@@ -22,27 +42,64 @@ class GradientReversalLayer(tf.keras.layers.Layer):
 		return GradientReversalOperator(inputs)
 
 class DANNModel:
-    def __init__(self, input_shape, num_classes):
+    def __init__(self, input_shape, num_classes, work_dir):
+        if not os.path.exists(work_dir):
+            os.makedirs(work_dir)
+        os.chdir(work_dir)
         self.input_shape = input_shape
         self.num_classes = num_classes
         self.model = self.build_model()
+        # 注册自定义层
+        tf.keras.utils.get_custom_objects()['GradientReversalLayer'] = GradientReversalLayer
 
-    def load_data(self, source_domain_file, target_domain_file):
-        # Read source domain data
-        source_domain = pd.read_csv(source_domain_file)
-        source_domain_data = source_domain.iloc[:, 1:]
-        source_domain_labels = source_domain['label']
-        source_domain_labels = source_domain_labels - 1
-        source_domain_labels = to_categorical(source_domain_labels, num_classes=self.num_classes)
+    def load_data(self, source_domain_file, target_domain_file = None, shuffle = True, is_test = False):
+        if is_test:
+            data = pd.read_csv(source_domain_file)
+            X = data.iloc[:, 1:]
+            y = data['label']
+            y_adjusted = y - 1
+            one_hot_y = to_categorical(y_adjusted, num_classes=self.num_classes)
 
-        # Read target domain data
-        target_domain = pd.read_csv(target_domain_file)
-        target_domain_data = target_domain.iloc[:, 1:]
-        target_domain_labels = target_domain['label']
-        target_domain_labels = target_domain_labels - 1
-        target_domain_labels = to_categorical(target_domain_labels, num_classes=self.num_classes)
+            #shuffle
+            indices = np.arange(y.shape[0])
+            if shuffle:
+                random_seed = 42  # 选择适当的随机种子
+                np.random.seed(random_seed)
+                np.random.shuffle(indices)
 
-        return source_domain_data, source_domain_labels, target_domain_data, target_domain_labels
+            self.X = np.array(X)[indices]
+            self.yl = one_hot_y[indices]
+        else: # train
+            # Read source domain data
+            source_domain = pd.read_csv(source_domain_file)
+            self.source_domain_data = source_domain.iloc[:, 1:]
+            source_domain_labels = source_domain['label']
+            source_domain_labels = source_domain_labels - 1
+            self.source_domain_labels = to_categorical(source_domain_labels, num_classes=self.num_classes)
+
+            # Read target domain data
+            target_domain = pd.read_csv(target_domain_file)
+            self.target_domain_data = target_domain.iloc[:, 1:]
+            target_domain_labels = target_domain['label']
+            target_domain_labels = target_domain_labels - 1
+            self.target_domain_labels = to_categorical(target_domain_labels, num_classes=self.num_classes)
+
+            # Combine source and target domain data and labels
+            combined_data = np.vstack([self.source_domain_data, self.target_domain_data])
+            combined_labels = np.vstack([self.source_domain_labels, self.target_domain_labels])
+
+            # Create domain labels (1 for source domain, 0 for target domain)
+            combined_domain_labels = np.concatenate([np.ones(len(self.source_domain_data)), np.zeros(len(self.target_domain_data))])
+            if shuffle:
+                # Shuffle the data
+                indices = np.arange(len(combined_data))
+                np.random.shuffle(indices)
+                combined_data = combined_data[indices]
+                combined_labels = combined_labels[indices]
+                combined_domain_labels = combined_domain_labels[indices]
+            self.X = combined_data
+            self.yl = combined_labels
+            self.yd = combined_domain_labels
 
     def build_model(self):
         # Input layer
@@ -93,7 +150,7 @@ class DANNModel:
 
         return domain_classifier_output
 
-    def plot_training_history(self, history):
+    def plot_training_history(self, history, model_path):
         # Plot training and validation loss for Label Predictor
         plt.figure(figsize=(12, 8))
         
@@ -130,48 +187,62 @@ class DANNModel:
         plt.ylabel('Accuracy')
         plt.legend()
 
+        # 添加整张图的标题
+        plt.suptitle(f"{model_path[:-3]} Training Curves")
         plt.tight_layout()
         plt.savefig('loss_and_accuracy.png')
 
-    def train(self, source_domain_data, source_domain_labels, target_domain_data, target_domain_labels, batch_size=32, epochs=50):
-        # Combine source and target domain data and labels
-        combined_data = np.vstack([source_domain_data, target_domain_data])
-        combined_labels = np.vstack([source_domain_labels, target_domain_labels])
-
-        # Create domain labels (1 for source domain, 0 for target domain)
-        combined_domain_labels = np.concatenate([np.ones(len(source_domain_data)), np.zeros(len(target_domain_data))])
-
-        # Shuffle the data
-        indices = np.arange(len(combined_data))
-        np.random.shuffle(indices)
-        combined_data = combined_data[indices]
-        combined_labels_one_hot = combined_labels[indices]
-        combined_domain_labels = combined_domain_labels[indices]
-
+    def train(self, model_path, batch_size=32, epochs=50):
         # Compile the DANN model
         self.model.compile(optimizer='adam',
                            loss={'label_predictor': 'categorical_crossentropy', 'domain_classifier': 'binary_crossentropy'},
-                           loss_weights={'label_predictor': 1.0, 'domain_classifier': 1.0},
+                           loss_weights={'label_predictor': 0.2, 'domain_classifier': 0.8},
                            metrics={'label_predictor': 'accuracy', 'domain_classifier': 'accuracy'})
 
         # Define the ModelCheckpoint callback to save the model with the minimum total loss
-        checkpoint = ModelCheckpoint('best_model.h5', monitor='val_loss', save_best_only=True, mode='min', verbose=1)
+        checkpoint = ModelCheckpoint(model_path, monitor='val_loss', save_best_only=True, mode='min', verbose=1)
 
         # Train the DANN model with validation split
-        history = self.model.fit(combined_data, {'label_predictor': combined_labels_one_hot, 'domain_classifier': combined_domain_labels},
+        history = self.model.fit(self.X, {'label_predictor': self.yl, 'domain_classifier': self.yd},
                                  batch_size=batch_size, epochs=epochs, validation_split=0.2, callbacks=[checkpoint])
 
         # Plot training history
-        self.plot_training_history(history)
+        self.plot_training_history(history, model_path)
 
         return history
+    
+    def predict(self, input_data):
+        # Assuming input_data is a list of RSSI values for Beacon_1 to Beacon_7
+        # input_data = [input_data]  # Scikit-Learn's predict method expects a 2D array
+        return self.model.predict(input_data)
+    
+    def load_model(self, model_path):
+        self.model = tf.keras.models.load_model(model_path)
 
+    def generate_predictions(self, model_path):
+        self.load_model(model_path)
+        prediction_results = {
+            'label': [],
+            'pred': []
+        }
+        # 進行預測
+        predicted_labels = self.predict(self.X)[0]
+        predicted_labels = np.argmax(predicted_labels, axis=1) + 1  # 加 1 是为了将索引转换为 1 到 41 的标签
+        label = np.argmax(self.yl, axis=1) + 1
+        # 將預測結果保存到 prediction_results 中
+        prediction_results['label'].extend(label.tolist())
+        prediction_results['pred'].extend(predicted_labels.tolist())
+        
+        return pd.DataFrame(prediction_results)
 
 if __name__ == "__main__":
     # 使用 argparse 處理命令列參數
     parser = argparse.ArgumentParser(description='Train DANN Model')
-    parser.add_argument('--source_domain_file', type=str, help='Path to the source domain data file', required=True)
-    parser.add_argument('--target_domain_file', type=str, help='Path to the target domain data file', required=True)
+    parser.add_argument('--training_source_domain_data', type=str, help='Path to the source domain data file')
+    parser.add_argument('--training_target_domain_data', type=str, help='Path to the target domain data file')
+    parser.add_argument('--testing_data_list', nargs='+', type=str, help='List of testing data paths')
+    parser.add_argument('--model_path', type=str, default='my_model.h5', help='path of .h5 file of model')
+    parser.add_argument('--work_dir', type=str, default='DNN', help='create new directory to save result')
     args = parser.parse_args()
 
     # 設定 input shape 和 num_classes
@@ -179,16 +250,31 @@ if __name__ == "__main__":
     num_classes = 41  # 這裡的數字要根據你的問題設定
 
     # 創建 DANNModel
-    dann_model = DANNModel(input_shape, num_classes)
+    dann_model = DANNModel(input_shape, num_classes, args.work_dir)
 
     # 讀取資料
-    source_domain_data, source_domain_labels, target_domain_data, target_domain_labels = dann_model.load_data(args.source_domain_file, args.target_domain_file)
-    
-    # 訓練模型
-    batch_size=32
-    epochs=100
-    history = dann_model.train(source_domain_data, source_domain_labels, target_domain_data, target_domain_labels, batch_size=batch_size, epochs=epochs)
-
-    # 顯示模型摘要
-    # dann_model.model.summary()
+    if args.training_source_domain_data and args.training_target_domain_data:
+        dann_model.load_data(args.training_source_domain_data, args.training_target_domain_data)
+        # 訓練模型
+        batch_size=32
+        epochs=500
+        history = dann_model.train(args.model_path, batch_size, epochs)
+        # 顯示模型摘要
+        # dann_model.model.summary()
+    elif args.testing_data_list:
+        testing_data_path_list = args.testing_data_list
+        for testing_data_path in testing_data_path_list:
+            for walk_str, walk_list in walk_class:
+                prediction_results = pd.DataFrame()
+                for walk in walk_list:
+                    # 加載數據
+                    dann_model.load_data(f"{testing_data_path}\\{walk}.csv", shuffle=False, is_test=True)
+                    results = dann_model.generate_predictions(args.model_path)
+                    prediction_results = pd.concat([prediction_results, results], ignore_index=True)
+                split_path = testing_data_path.split('\\')
+                predictions_dir = f'predictions/{split_path[3]}'
+                os.makedirs(predictions_dir, exist_ok=True)
+                prediction_results.to_csv(os.path.join(predictions_dir, f'{walk_str}_predictions.csv'), index=False)
+    else:
+        print('Please specify --training_source_domain_data/--training_target_domain_data or --testing_data_list option.')
 
