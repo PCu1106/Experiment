@@ -17,6 +17,8 @@ python .\DANN.py \
 python ..\..\model_comparison\evaluator.py \
     --model_name DANN \
     --directory 231116_220318\2_1
+
+python .\DANN.py --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes D:\Experiment\data\220318\GalaxyA51\routes D:\Experiment\data\231117\GalaxyA51\routes --model_path fine_tuned_model.h5 --work_dir 1layerLP\231116_220318_231117_e1
 '''
 import numpy as np
 import tensorflow as tf
@@ -27,6 +29,7 @@ import argparse
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.utils import to_categorical
 import os
+from tensorflow.keras.utils import plot_model
 import sys
 sys.path.append('..\\..\\model_comparison')
 from walk_definitions import walk_class
@@ -139,7 +142,7 @@ class DANNModel:
     def build_label_predictor(self, feature_extractor):
         # Label predictor layers
         x = layers.Dense(32, activation='relu', name='label_predictor_1')(feature_extractor)
-        label_predictor_output = layers.Dense(self.num_classes, activation='softmax', name='label_predictor_2')(x)
+        label_predictor_output = layers.Dense(self.num_classes, activation='softmax', name='label_predictor_output')(x)
 
         return label_predictor_output
 
@@ -147,7 +150,7 @@ class DANNModel:
         # Domain classifier layers
         x = GradientReversalLayer()(feature_extractor)
         x = layers.Dense(8, activation='relu', name='domain_classifier_1')(x)
-        domain_classifier_output = layers.Dense(1, activation='sigmoid', name='domain_classifier_2')(x)
+        domain_classifier_output = layers.Dense(1, activation='sigmoid', name='domain_classifier_output')(x)
 
         return domain_classifier_output
 
@@ -196,15 +199,15 @@ class DANNModel:
     def train(self, model_path, batch_size=32, epochs=50):
         # Compile the DANN model
         self.model.compile(optimizer='adam',
-                           loss={'label_predictor_2': 'categorical_crossentropy', 'domain_classifier_2': 'binary_crossentropy'},
-                           loss_weights={'label_predictor_2': 0.25, 'domain_classifier_2': 0.75},
-                           metrics={'label_predictor_2': 'accuracy', 'domain_classifier_2': 'accuracy'})
+                           loss={'label_predictor_output': 'categorical_crossentropy', 'domain_classifier_output': 'binary_crossentropy'},
+                           loss_weights={'label_predictor_output': 1.0, 'domain_classifier_output': 0.0},
+                           metrics={'label_predictor_output': 'accuracy', 'domain_classifier_output': 'accuracy'})
 
         # Define the ModelCheckpoint callback to save the model with the minimum total loss
         checkpoint = ModelCheckpoint(model_path, monitor='val_loss', save_best_only=True, mode='min', verbose=1)
 
         # Train the DANN model with validation split
-        history = self.model.fit(self.X, {'label_predictor_2': self.yl, 'domain_classifier_2': self.yd},
+        history = self.model.fit(self.X, {'label_predictor_output': self.yl, 'domain_classifier_output': self.yd},
                                  batch_size=batch_size, epochs=epochs, validation_split=0.2, callbacks=[checkpoint])
 
         # Plot training history
@@ -253,15 +256,15 @@ class DANNModel:
 
         # 编译模型，仅优化 label predictor 部分
         self.model.compile(optimizer='adam',
-                           loss={'label_predictor_2': 'categorical_crossentropy', 'domain_classifier_2': 'binary_crossentropy'},
-                           loss_weights={'label_predictor_2': 1.0, 'domain_classifier_2': 0.0},
-                           metrics={'label_predictor_2': 'accuracy', 'domain_classifier_2': 'accuracy'})
+                           loss={'label_predictor_output': 'categorical_crossentropy', 'domain_classifier_output': 'binary_crossentropy'},
+                           loss_weights={'label_predictor_output': 1.0, 'domain_classifier_output': 0.0},
+                           metrics={'label_predictor_output': 'accuracy', 'domain_classifier_output': 'accuracy'})
 
         # 定义 ModelCheckpoint 回调以保存 fine-tuned 模型
         fine_tune_checkpoint = ModelCheckpoint('fine_tuned_model.h5', monitor='val_loss', save_best_only=True, mode='min', verbose=1)
 
         # 在 fine_tune_data 上进行 fine-tune
-        fine_tune_history = self.model.fit(self.X, {'label_predictor_2': self.yl, 'domain_classifier_2': self.yd},
+        fine_tune_history = self.model.fit(self.X, {'label_predictor_output': self.yl, 'domain_classifier_output': self.yd},
                                  batch_size=batch_size, epochs=epochs, validation_split=0.2, callbacks=[fine_tune_checkpoint])
          
         # 绘制 fine-tune 的训练历史
@@ -289,6 +292,7 @@ if __name__ == "__main__":
     for data_drop_out in data_drop_out_list:
         # 創建 DANNModel    
         dann_model = DANNModel(input_shape, num_classes, f'{args.work_dir}_{data_drop_out:.1f}')
+        plot_model(dann_model.model, to_file='model_plot.png', show_shapes=True, show_layer_names=True)
         # 讀取資料
         if args.training_source_domain_data and args.training_target_domain_data:
             dann_model.load_data(args.training_source_domain_data, args.training_target_domain_data, data_drop_out)
