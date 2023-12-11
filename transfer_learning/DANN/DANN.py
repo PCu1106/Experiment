@@ -136,13 +136,14 @@ class DANNModel:
         # Shared feature extraction layers
         x = layers.Dense(8, activation='relu', name='feature_extractor_1')(input_data)
         x = layers.Dense(16, activation='relu', name='feature_extractor_2')(x)
+        x = layers.Dense(32, activation='relu', name='feature_extractor_3')(x)
 
         return x
 
     def build_label_predictor(self, feature_extractor):
         # Label predictor layers
-        x = layers.Dense(32, activation='relu', name='label_predictor_1')(feature_extractor)
-        label_predictor_output = layers.Dense(self.num_classes, activation='softmax', name='label_predictor_output')(x)
+        # x = layers.Dense(32, activation='relu', name='label_predictor_1')(feature_extractor)
+        label_predictor_output = layers.Dense(self.num_classes, activation='softmax', name='label_predictor_output')(feature_extractor)
 
         return label_predictor_output
 
@@ -159,16 +160,16 @@ class DANNModel:
         plt.figure(figsize=(12, 8))
         
         plt.subplot(2, 2, 1)
-        plt.plot(history.history['label_predictor_2_loss'], label='Train Label Predictor Loss')
-        plt.plot(history.history['val_label_predictor_2_loss'], label='Validation Label Predictor Loss')
+        plt.plot(history.history['label_predictor_output_loss'], label='Train Label Predictor Loss')
+        plt.plot(history.history['val_label_predictor_output_loss'], label='Validation Label Predictor Loss')
         plt.title('Label Predictor Training and Validation Loss')
         plt.xlabel('Epoch')
         plt.ylabel('Loss')
         plt.legend()
 
         plt.subplot(2, 2, 2)
-        plt.plot(history.history['label_predictor_2_accuracy'], label='Train Label Predictor Accuracy')
-        plt.plot(history.history['val_label_predictor_2_accuracy'], label='Validation Label Predictor Accuracy')
+        plt.plot(history.history['label_predictor_output_accuracy'], label='Train Label Predictor Accuracy')
+        plt.plot(history.history['val_label_predictor_output_accuracy'], label='Validation Label Predictor Accuracy')
         plt.title('Label Predictor Training and Validation Accuracy')
         plt.xlabel('Epoch')
         plt.ylabel('Accuracy')
@@ -176,16 +177,16 @@ class DANNModel:
 
         # Plot training and validation loss for Domain Classifier
         plt.subplot(2, 2, 3)
-        plt.plot(history.history['domain_classifier_2_loss'], label='Train Domain Classifier Loss')
-        plt.plot(history.history['val_domain_classifier_2_loss'], label='Validation Domain Classifier Loss')
+        plt.plot(history.history['domain_classifier_output_loss'], label='Train Domain Classifier Loss')
+        plt.plot(history.history['val_domain_classifier_output_loss'], label='Validation Domain Classifier Loss')
         plt.title('Domain Classifier Training and Validation Loss')
         plt.xlabel('Epoch')
         plt.ylabel('Loss')
         plt.legend()
 
         plt.subplot(2, 2, 4)
-        plt.plot(history.history['domain_classifier_2_accuracy'], label='Train Domain Classifier Accuracy')
-        plt.plot(history.history['val_domain_classifier_2_accuracy'], label='Validation Domain Classifier Accuracy')
+        plt.plot(history.history['domain_classifier_output_accuracy'], label='Train Domain Classifier Accuracy')
+        plt.plot(history.history['val_domain_classifier_output_accuracy'], label='Validation Domain Classifier Accuracy')
         plt.title('Domain Classifier Training and Validation Accuracy')
         plt.xlabel('Epoch')
         plt.ylabel('Accuracy')
