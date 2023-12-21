@@ -3,22 +3,20 @@ python .\DANN.py \
     --training_source_domain_data D:\Experiment\data\231116\GalaxyA51\wireless_training.csv \
     --training_target_domain_data D:\Experiment\data\220318\GalaxyA51\wireless_training.csv \
     --model_path 231116_220318.h5 \
-    --work_dir 231116_220318\2_1
+    --work_dir 1layerLP\231116_220318\1_0
 python .\DANN.py \
     --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes \
                         D:\Experiment\data\220318\GalaxyA51\routes \
                         D:\Experiment\data\231117\GalaxyA51\routes \
     --model_path 231116_220318.h5 \
-    --work_dir 231116_220318\2_1
+    --work_dir 1layerLP\231116_220318\1_0
 python .\DANN.py \
     --fine_tune_data D:\Experiment\data\231117\GalaxyA51\wireless_training.csv \
     --model_path D:\Experiment\transfer_learning\DANN\231116_220318\1_3\231116_220318.h5 \
     --work_dir 231116_220318_231117
 python ..\..\model_comparison\evaluator.py \
     --model_name DANN \
-    --directory 231116_220318\2_1
-
-python .\DANN.py --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes D:\Experiment\data\220318\GalaxyA51\routes D:\Experiment\data\231117\GalaxyA51\routes --model_path fine_tuned_model.h5 --work_dir 1layerLP\231116_220318_231117_e1
+    --directory 1layerLP\231116_220318\1_0
 '''
 import numpy as np
 import tensorflow as tf
@@ -34,6 +32,27 @@ import sys
 sys.path.append('..\\..\\model_comparison')
 from walk_definitions import walk_class
 from evaluator import Evaluator
+
+def plot_lines(data_drop_out_list, target_domain1, source_domain, target_domain2, output_path, title):
+    plt.plot(data_drop_out_list, target_domain1, marker='o', label='Target Domain1', color='blue')
+    # plt.plot(freeze_layers, source_domain, marker='o', label='Source Domain', color='orange')
+    # plt.plot(freeze_layers, target_domain2, marker='o', label='Target Domain2', color='green')
+
+    plt.xlabel('data dropout ratio')
+    plt.ylabel('MDE (m)')
+    plt.title(title)
+    plt.legend()
+    plt.grid(True)
+    plt.xticks(data_drop_out_list, labels=[f'{x:.1f}' for x in data_drop_out_list])
+    plt.ylim(0, 3)
+
+    # 在每個點的上方顯示數字
+    for x, y1, y2, y3 in zip(data_drop_out_list, target_domain1, source_domain, target_domain2):
+        plt.text(x, y1, f'{y1:.3f}', ha='center', va='bottom')
+        # plt.text(x, y2, f'{y2:.3f}', ha='center', va='bottom')
+        # plt.text(x, y3, f'{y3:.3f}', ha='center', va='bottom')
+    
+    plt.savefig(output_path)
 
 @tf.custom_gradient
 def GradientReversalOperator(x):
@@ -201,7 +220,7 @@ class DANNModel:
         # Compile the DANN model
         self.model.compile(optimizer='adam',
                            loss={'label_predictor_output': 'categorical_crossentropy', 'domain_classifier_output': 'binary_crossentropy'},
-                           loss_weights={'label_predictor_output': 1.0, 'domain_classifier_output': 0.0},
+                           loss_weights={'label_predictor_output': 0.5, 'domain_classifier_output': 0.5},
                            metrics={'label_predictor_output': 'accuracy', 'domain_classifier_output': 'accuracy'})
 
         # Define the ModelCheckpoint callback to save the model with the minimum total loss
@@ -284,12 +303,17 @@ if __name__ == "__main__":
     parser.add_argument('--work_dir', type=str, default='DANN', help='create new directory to save result')
     args = parser.parse_args()
 
+    target_domain1_result = []
+    source_domain_reult = []
+    target_domain2_result = []
+
     # 設定 input shape 和 num_classes
     input_shape = (7,)
     num_classes = 41  # 這裡的數字要根據你的問題設定
     batch_size=32
-    epochs=1
-    data_drop_out_list = np.arange(0.0, 0.1, 0.1)
+    epochs=500
+    data_drop_out_list = np.arange(0.0, 1.1, 0.1)
+    
     for data_drop_out in data_drop_out_list:
         # 創建 DANNModel    
         dann_model = DANNModel(input_shape, num_classes, f'{args.work_dir}_{data_drop_out:.1f}')
@@ -313,11 +337,19 @@ if __name__ == "__main__":
                     predictions_dir = f'predictions/{split_path[3]}'
                     os.makedirs(predictions_dir, exist_ok=True)
                     prediction_results.to_csv(os.path.join(predictions_dir, f'{walk_str}_predictions.csv'), index=False)
+            predicion_data_path_list = os.listdir('predictions/')
+            evaluator = Evaluator()
+            mde_list = evaluator.test(predicion_data_path_list, f'{args.work_dir}_{data_drop_out}')
+            target_domain1_result.append(mde_list[0][1])
+            source_domain_reult.append(mde_list[1][1])
+            target_domain2_result.append(mde_list[2][1])
         elif args.fine_tune_data:
             dann_model.load_data(args.fine_tune_data, one_file=True)
             dann_model.fine_tune(args.model_path, batch_size, epochs)
         else:
             print('Please specify --training_source_domain_data/--training_target_domain_data or --testing_data_list option.')
 
-        os.chdir('..\\..')
+        os.chdir('..\\..\\..')
     
+    if args.testing_data_list:
+        plot_lines(data_drop_out_list, target_domain1_result, source_domain_reult, target_domain2_result, 'Dropout_Data.png', 'Source_domain_to_Target_domain1')

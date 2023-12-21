@@ -9,6 +9,8 @@ Output file
 3. routes/{route_name}.csv (evaluate performance)
 3. max_beacon_rssi.pickle (record the max RSSI value of each beacon)
 4. min_beacon_rssi.pickle (record the min RSSI value of each beacon)
+
+python .\wireless_preprocessing.py --directory D:\Experiment\data\231218\GalaxyA51
 '''
 
 import numpy as np

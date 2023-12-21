@@ -8,4 +8,5 @@ freewalk = [
 ]
 walk_class = [('scripted_walk', scripted_walk), ('stationary', stationary), ('freewalk', freewalk)]
 
-date2domain = {'220318': 'Target domain1', '231116': 'Source domain', '231117': 'Target domain2'}
+# date2domain = {'220318': 'Target domain1', '231116': 'Source domain', '231117': 'Target domain2'}
+date2color = {'220318': 'blue', '231116': 'darkorange', '231117': 'green'}

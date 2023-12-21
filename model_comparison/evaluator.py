@@ -1,5 +1,5 @@
 '''
-python .\evaluator.py --model_name 231116 --directory DNN
+python ..\..\model_comparison\evaluator.py --model_name DANN --directory 1layerLP\231116_220318_231117_e500_0.0 --source_domain 220318 --target_domain 231116
 '''
 
 import argparse
@@ -11,7 +11,8 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.callbacks import ModelCheckpoint
-from walk_definitions import date2domain
+# from walk_definitions import date2domain
+from walk_definitions import date2color
 
 class Evaluator:
     def __init__(self):
@@ -79,10 +80,10 @@ class Evaluator:
     def test(self, predicion_data_path_list, total_model_name):
         mde_list = []
         label_list = []
-        for predicion_data_path in predicion_data_path_list:
+        for i, predicion_data_path in enumerate(predicion_data_path_list):
             mde_list.append(self.calculate_mde(f'predictions\\{predicion_data_path}'))
             split_path = predicion_data_path.split('\\')
-            label = date2domain[f'{split_path[-1]}']
+            label = 'Source domain' if i == 0 else 'Target domain'
             label_list.append(label)
         # X轴标签
         labels = ["scripted_walk", "stationary", "freewalk"]
@@ -93,9 +94,12 @@ class Evaluator:
         # X轴的位置
         x = range(len(labels))
 
+        color_list = [date2color[key] for path in predicion_data_path_list for key in path.split('\\') if key in date2color]
+        print(color_list)
+
         # 绘制柱状图
         for i, mde in enumerate(mde_list):
-            plt.bar([j + i * bar_width for j in x], mde_list[i], width=bar_width, label=label_list[i])
+            plt.bar([j + i * bar_width for j in x], mde_list[i], color = color_list[i], width=bar_width, label=label_list[i])
 
         # 设置X轴标签
         plt.xticks([i + bar_width/2 for i in x], labels)
@@ -117,7 +121,7 @@ class Evaluator:
         plt.ylabel("MDE Value")
 
         # 保存图像到文件
-        plt.savefig("mde_comparison.png")
+        plt.savefig(f"{predicion_data_path_list}_mde_comparison.png")
         plt.clf()
 
         return mde_list # [[file1 three mde], [file2 three mde], ...]
@@ -127,14 +131,17 @@ class Evaluator:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='DNN Indoor Localization')
 
-    parser.add_argument('--model_name', type=str, default='', help='Would show on the pigure title')
-    parser.add_argument('--directory', type=str, help='Evaluated model directory which has \'predictions\' directory')
+    parser.add_argument('--model_name', type=str, default='', required = True, help='Would show on the pigure title')
+    parser.add_argument('--directory', type=str, required = True, help='Evaluated model directory which has \'predictions\' directory')
+    parser.add_argument('--source_domain', type=str, required = True, help='directory of source domain result, ex: predictions\'220318')
+    parser.add_argument('--target_domain', type=str, required = True, help='directory of target domain result, ex: predictions\'231116')
 
     # 解析命令行参数
     args = parser.parse_args()
 
     os.chdir(args.directory)
-    predicion_data_path_list = os.listdir('predictions/')
+    # predicion_data_path_list = os.listdir('predictions/')
+    predicion_data_path_list = [args.source_domain, args.target_domain]
     total_model_name = f'{args.model_name}' + f' {args.directory}'
     evaluator = Evaluator()
     evaluator.test(predicion_data_path_list, total_model_name)
