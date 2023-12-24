@@ -16,7 +16,9 @@ python .\DANN.py \
     --work_dir 231116_220318_231117
 python ..\..\model_comparison\evaluator.py \
     --model_name DANN \
-    --directory 1layerLP\231116_220318\1_0
+    --directory 220318_231116\12_0.0 \
+    --source_domain 220318 \
+    --target_domain 231116
 '''
 import numpy as np
 import tensorflow as tf
@@ -276,7 +278,7 @@ class DANNModel:
         # 编译模型，仅优化 label predictor 部分
         self.model.compile(optimizer='adam',
                            loss={'label_predictor_output': 'categorical_crossentropy', 'domain_classifier_output': 'binary_crossentropy'},
-                           loss_weights={'label_predictor_output': 1.0, 'domain_classifier_output': 0.0},
+                           loss_weights={'label_predictor_output': 0.33, 'domain_classifier_output': 0.67},
                            metrics={'label_predictor_output': 'accuracy', 'domain_classifier_output': 'accuracy'})
 
         # 定义 ModelCheckpoint 回调以保存 fine-tuned 模型
@@ -311,7 +313,7 @@ if __name__ == "__main__":
     num_classes = 41  # 這裡的數字要根據你的問題設定
     batch_size=32
     epochs=500
-    data_drop_out_list = np.arange(0.0, 1.1, 0.1)
+    data_drop_out_list = np.arange(0.0, 0.1, 0.1)
     
     for data_drop_out in data_drop_out_list:
         # 創建 DANNModel    
