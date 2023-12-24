@@ -155,14 +155,13 @@ class DANNModel:
         # Shared feature extraction layers
         x = layers.Dense(8, activation='relu', name='feature_extractor_1')(input_data)
         x = layers.Dense(16, activation='relu', name='feature_extractor_2')(x)
-        x = layers.Dense(32, activation='relu', name='feature_extractor_3')(x)
 
         return x
 
     def build_label_predictor(self, feature_extractor):
         # Label predictor layers
-        # x = layers.Dense(32, activation='relu', name='label_predictor_1')(feature_extractor)
-        label_predictor_output = layers.Dense(self.num_classes, activation='softmax', name='label_predictor_output')(feature_extractor)
+        x = layers.Dense(32, activation='relu', name='label_predictor_1')(feature_extractor)
+        label_predictor_output = layers.Dense(self.num_classes, activation='softmax', name='label_predictor_output')(x)
 
         return label_predictor_output
 
