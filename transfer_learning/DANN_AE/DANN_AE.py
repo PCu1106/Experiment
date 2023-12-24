@@ -1,3 +1,22 @@
+'''
+python .\DANN_AE.py \
+    --training_source_domain_data D:\Experiment\data\220318\GalaxyA51\wireless_training.csv \
+    --training_target_domain_data D:\Experiment\data\231116\GalaxyA51\wireless_training.csv \
+    --model_path 220318_231116.h5 \
+    --work_dir 220318_231116\343
+python .\DANN_AE.py \
+    --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes \
+                        D:\Experiment\data\220318\GalaxyA51\routes \
+                        D:\Experiment\data\231117\GalaxyA51\routes \
+    --model_path 220318_231116.h5 \
+    --work_dir 220318_231116\343
+python ..\..\model_comparison\evaluator.py \
+    --model_name DANN_AE \
+    --directory 220318_231116\343_0.0 \
+    --source_domain 220318 \
+    --target_domain 231116
+'''
+
 import sys
 sys.path.append('..\\DANN')
 import argparse
@@ -59,9 +78,9 @@ class AutoencoderDANNModel(DANNModel):
                 'decoder_output': 'mse'  # Reconstruction loss
             },
             loss_weights={
-                'label_predictor_output': 0.3,
+                'label_predictor_output': 0.2,
                 'domain_classifier_output': 0.4,
-                'decoder_output': 0.3  # Adjust the weight for the reconstruction loss
+                'decoder_output': 0.4  # Adjust the weight for the reconstruction loss
             },
             metrics={
                 'label_predictor_output': 'accuracy',
@@ -165,8 +184,8 @@ if __name__ == "__main__":
     input_shape = 7
     num_classes = 41  # 這裡的數字要根據你的問題設定
     batch_size=32
-    epochs=10
-    data_drop_out_list = np.arange(0.0, 1.1, 0.1)
+    epochs=500
+    data_drop_out_list = np.arange(0.0, 0.1, 0.1)
     
     for data_drop_out in data_drop_out_list:
         # 創建 DANNModel    
