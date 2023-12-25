@@ -39,6 +39,21 @@ class Evaluator:
     def euclidean_distance(self, p1, p2):
         return np.sqrt((p1[0]-p2[0])*(p1[0]-p2[0])+(p1[1]-p2[1])*(p1[1]-p2[1])) * 0.6
 
+    def plot_cdf(self, errors, label, color):
+        # 设置CDF图的范围和分辨率
+        min_error = 0.0
+        max_error = 8.0
+        bin_width = 0.2
+
+        # 创建直方图
+        hist, bin_edges = np.histogram(errors, bins=np.arange(min_error, max_error + bin_width, bin_width), density=True)
+
+        # 计算CDF
+        cdf = np.cumsum(hist) * bin_width
+
+        # 绘制CDF图
+        plt.plot(bin_edges[:-1], cdf, label=label, color=color)
+
     def record_walk_cdf(self, errors, csv_file_path):
         x = np.arange(0, 8.2, 0.2) # 0~8m
         # 判斷CSV文件是否存在
@@ -84,11 +99,27 @@ class Evaluator:
     def test(self, predicion_data_path_list, total_model_name):
         mde_list = []
         label_list = []
+        stationary_error = []
         for i, predicion_data_path in enumerate(predicion_data_path_list):
             total_mde, total_errors = self.calculate_mde(f'predictions\\{predicion_data_path}')
             mde_list.append(total_mde)
             label = 'Source domain' if i == 0 else 'Target domain'
             label_list.append(label)
+            stationary_error.append(total_errors[1])
+
+        color_list = [date2color[key] for path in predicion_data_path_list for key in path.split('\\') if key in date2color]
+        print(color_list)
+
+        for i, errors in enumerate(stationary_error):
+            domain = 'Source domain' if i == 0 else 'Target domain'
+            self.plot_cdf(errors, domain, color_list[i])
+        # 设置图的标题和标签
+        plt.title('CDF of Errors')
+        plt.xlabel('Error')
+        plt.ylabel('Cumulative Probability')
+        plt.legend()
+        plt.savefig("CDF.png")
+        plt.clf()
         # X轴标签
         labels = ["scripted_walk", "stationary", "freewalk"]
 
@@ -98,8 +129,7 @@ class Evaluator:
         # X轴的位置
         x = range(len(labels))
 
-        color_list = [date2color[key] for path in predicion_data_path_list for key in path.split('\\') if key in date2color]
-        print(color_list)
+        
 
         # 绘制柱状图
         for i, mde in enumerate(mde_list):
