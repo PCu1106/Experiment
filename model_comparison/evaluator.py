@@ -61,8 +61,9 @@ class Evaluator:
     def calculate_mde(self, prediction_data_path):
         print('Calculate MDE...')
         total_mde = []
-        errors = []
+        total_errors = []
         for walk_str in self.walk_class:
+            errors = []
             mde = 0
             predict_file = pd.read_csv(f'{prediction_data_path}\\{walk_str}_predictions.csv')
             for i in range(len(predict_file)):
@@ -73,18 +74,19 @@ class Evaluator:
                 mde += de
             mde = mde / len(predict_file)
             total_mde.append(mde)
+            total_errors.append(errors)
             self.record_walk_cdf(errors, f'{walk_str}_cdf.csv')
             
         print(total_mde)
         print(f'average MDE: {sum(total_mde) / len(total_mde)}')
-        return total_mde # [scripted_walk mde, stationary mde, freewalk mde]
+        return total_mde, total_errors # [scripted_walk mde, stationary mde, freewalk mde]
     
     def test(self, predicion_data_path_list, total_model_name):
         mde_list = []
         label_list = []
         for i, predicion_data_path in enumerate(predicion_data_path_list):
-            mde_list.append(self.calculate_mde(f'predictions\\{predicion_data_path}'))
-            split_path = predicion_data_path.split('\\')
+            total_mde, total_errors = self.calculate_mde(f'predictions\\{predicion_data_path}')
+            mde_list.append(total_mde)
             label = 'Source domain' if i == 0 else 'Target domain'
             label_list.append(label)
         # X轴标签
