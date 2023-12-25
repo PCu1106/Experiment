@@ -184,7 +184,7 @@ if __name__ == "__main__":
     input_shape = 7
     num_classes = 41  # 這裡的數字要根據你的問題設定
     batch_size=32
-    epochs=500
+    epochs=1000
     data_drop_out_list = np.arange(0.0, 0.1, 0.1)
     
     for data_drop_out in data_drop_out_list:

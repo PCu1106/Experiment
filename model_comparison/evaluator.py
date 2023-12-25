@@ -39,6 +39,25 @@ class Evaluator:
     def euclidean_distance(self, p1, p2):
         return np.sqrt((p1[0]-p2[0])*(p1[0]-p2[0])+(p1[1]-p2[1])*(p1[1]-p2[1])) * 0.6
 
+    def record_walk_cdf(self, errors, csv_file_path):
+        x = np.arange(0, 8.2, 0.2) # 0~8m
+        # 判斷CSV文件是否存在
+        if not os.path.exists(csv_file_path):
+            # 如果文件不存在，写入头部信息
+            with open(csv_file_path, 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(x.tolist())
+
+        # 继续写入概率信息
+        with open(csv_file_path, 'a', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            errors_pd = pd.DataFrame(errors)
+            prob = []
+            for i in x:
+                result = errors_pd.where(errors_pd <= i).count().sum()
+                prob.append(result / len(errors_pd))
+            writer.writerow(prob)
+
     def calculate_mde(self, prediction_data_path):
         print('Calculate MDE...')
         total_mde = []
@@ -54,25 +73,8 @@ class Evaluator:
                 mde += de
             mde = mde / len(predict_file)
             total_mde.append(mde)
+            self.record_walk_cdf(errors, f'{walk_str}_cdf.csv')
             
-            csv_file_path = f'{walk_str}_cdf.csv'
-            x = np.arange(0, 8.2, 0.2) # 0~8m
-            # 判斷CSV文件是否存在
-            if not os.path.exists(csv_file_path):
-                # 如果文件不存在，写入头部信息
-                with open(csv_file_path, 'w', newline='') as csvfile:
-                    writer = csv.writer(csvfile)
-                    writer.writerow(x.tolist())
-
-            # 继续写入概率信息
-            with open(csv_file_path, 'a', newline='') as csvfile:
-                writer = csv.writer(csvfile)
-                errors_pd = pd.DataFrame(errors)
-                prob = []
-                for i in x:
-                    result = errors_pd.where(errors_pd <= i).count().sum()
-                    prob.append(result / len(errors_pd))
-                writer.writerow(prob)
         print(total_mde)
         print(f'average MDE: {sum(total_mde) / len(total_mde)}')
         return total_mde # [scripted_walk mde, stationary mde, freewalk mde]
