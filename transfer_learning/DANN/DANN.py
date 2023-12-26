@@ -135,6 +135,10 @@ class DANNModel:
             self.yl = combined_labels
             self.yd = combined_domain_labels
 
+    def add_noise_to_data(self, noise_level=0.02):
+        noise = np.random.normal(loc=0, scale=noise_level, size=self.X.shape)
+        self.X = self.X + noise
+
     def build_model(self):
         # Input layer
         input_data = layers.Input(shape=self.input_shape, name='input_data')
@@ -292,6 +296,7 @@ class DANNModel:
         self.plot_training_history(fine_tune_history, 'fine_tuned_model.h5')
 
         return fine_tune_history
+    
 
 if __name__ == "__main__":
     # 使用 argparse 處理命令列參數
@@ -302,6 +307,8 @@ if __name__ == "__main__":
     parser.add_argument('--fine_tune_data', type=str, help='Path to the fine-tune data file')
     parser.add_argument('--model_path', type=str, default='my_model.h5', help='path of .h5 file of model')
     parser.add_argument('--work_dir', type=str, default='DANN', help='create new directory to save result')
+    parser.add_argument('--noise', action='store_true', default=False, help='add noise or not')
+
     args = parser.parse_args()
 
     target_domain1_result = []
@@ -332,6 +339,8 @@ if __name__ == "__main__":
                     for walk in walk_list:
                         # 加載數據
                         dann_model.load_data(f"{testing_data_path}\\{walk}.csv", shuffle=False, one_file=True)
+                        if args.noise:
+                            dann_model.add_noise_to_data()
                         results = dann_model.generate_predictions(args.model_path)
                         prediction_results = pd.concat([prediction_results, results], ignore_index=True)
                     split_path = testing_data_path.split('\\')
@@ -340,7 +349,8 @@ if __name__ == "__main__":
                     prediction_results.to_csv(os.path.join(predictions_dir, f'{walk_str}_predictions.csv'), index=False)
             predicion_data_path_list = os.listdir('predictions/')
             evaluator = Evaluator()
-            mde_list = evaluator.test(predicion_data_path_list, f'{args.work_dir}_{data_drop_out}')
+            dir = 'noise' if args.noise else None
+            mde_list = evaluator.test(predicion_data_path_list, f'{args.work_dir}_{data_drop_out}', dir)
             target_domain1_result.append(mde_list[0][1])
             source_domain_reult.append(mde_list[1][1])
             target_domain2_result.append(mde_list[2][1])

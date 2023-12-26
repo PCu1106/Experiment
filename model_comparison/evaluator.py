@@ -96,16 +96,20 @@ class Evaluator:
         print(f'average MDE: {sum(total_mde) / len(total_mde)}')
         return total_mde, total_errors # [scripted_walk mde, stationary mde, freewalk mde]
     
-    def test(self, predicion_data_path_list, total_model_name):
+    def test(self, predicion_data_path_list, total_model_name, dir = None):
         mde_list = []
         label_list = []
         stationary_error = []
         for i, predicion_data_path in enumerate(predicion_data_path_list):
-            total_mde, total_errors = self.calculate_mde(f'predictions\\{predicion_data_path}')
+            total_mde, total_errors = self.calculate_mde(os.path.join('predictions', predicion_data_path))
             mde_list.append(total_mde)
             label = 'Source domain' if i == 0 else 'Target domain'
             label_list.append(label)
             stationary_error.append(total_errors[1])
+        if dir:
+            if not os.path.exists(dir):
+                os.makedirs(dir)
+            os.chdir(dir)
 
         color_list = [date2color[key] for path in predicion_data_path_list for key in path.split('\\') if key in date2color]
         print(color_list)

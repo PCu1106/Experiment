@@ -174,6 +174,7 @@ if __name__ == "__main__":
     parser.add_argument('--fine_tune_data', type=str, help='Path to the fine-tune data file')
     parser.add_argument('--model_path', type=str, default='my_model.h5', help='path of .h5 file of model')
     parser.add_argument('--work_dir', type=str, default='DANN', help='create new directory to save result')
+    parser.add_argument('--noise', action='store_true', default=False, help='add noise or not')
     args = parser.parse_args()
 
     target_domain1_result = []
@@ -184,7 +185,7 @@ if __name__ == "__main__":
     input_shape = 7
     num_classes = 41  # 這裡的數字要根據你的問題設定
     batch_size=32
-    epochs=1000
+    epochs=500
     data_drop_out_list = np.arange(0.0, 0.1, 0.1)
     
     for data_drop_out in data_drop_out_list:
@@ -204,6 +205,8 @@ if __name__ == "__main__":
                     for walk in walk_list:
                         # 加載數據
                         dann_model.load_data(f"{testing_data_path}\\{walk}.csv", shuffle=False, one_file=True)
+                        if args.noise:
+                            dann_model.add_noise_to_data()
                         results = dann_model.generate_predictions(args.model_path)
                         prediction_results = pd.concat([prediction_results, results], ignore_index=True)
                     split_path = testing_data_path.split('\\')
@@ -212,7 +215,8 @@ if __name__ == "__main__":
                     prediction_results.to_csv(os.path.join(predictions_dir, f'{walk_str}_predictions.csv'), index=False)
             predicion_data_path_list = os.listdir('predictions/')
             evaluator = Evaluator()
-            mde_list = evaluator.test(predicion_data_path_list, f'{args.work_dir}_{data_drop_out}')
+            dir = 'noise' if args.noise else None
+            mde_list = evaluator.test(predicion_data_path_list, f'{args.work_dir}_{data_drop_out}', dir)
             target_domain1_result.append(mde_list[0][1])
             source_domain_reult.append(mde_list[1][1])
             target_domain2_result.append(mde_list[2][1])
