@@ -34,27 +34,8 @@ import sys
 sys.path.append('..\\..\\model_comparison')
 from walk_definitions import walk_class
 from evaluator import Evaluator
-
-def plot_lines(data_drop_out_list, target_domain1, source_domain, target_domain2, output_path, title):
-    plt.plot(data_drop_out_list, target_domain1, marker='o', label='Target Domain1', color='blue')
-    # plt.plot(freeze_layers, source_domain, marker='o', label='Source Domain', color='orange')
-    # plt.plot(freeze_layers, target_domain2, marker='o', label='Target Domain2', color='green')
-
-    plt.xlabel('data dropout ratio')
-    plt.ylabel('MDE (m)')
-    plt.title(title)
-    plt.legend()
-    plt.grid(True)
-    plt.xticks(data_drop_out_list, labels=[f'{x:.1f}' for x in data_drop_out_list])
-    plt.ylim(0, 3)
-
-    # 在每個點的上方顯示數字
-    for x, y1, y2, y3 in zip(data_drop_out_list, target_domain1, source_domain, target_domain2):
-        plt.text(x, y1, f'{y1:.3f}', ha='center', va='bottom')
-        # plt.text(x, y2, f'{y2:.3f}', ha='center', va='bottom')
-        # plt.text(x, y3, f'{y3:.3f}', ha='center', va='bottom')
-    
-    plt.savefig(output_path)
+sys.path.append('..')
+from drop_out_plot import plot_lines
 
 @tf.custom_gradient
 def GradientReversalOperator(x):
@@ -311,16 +292,16 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    target_domain1_result = []
-    source_domain_reult = []
-    target_domain2_result = []
+    domain1_result = []
+    domain2_result = []
+    domain3_result = []
 
     # 設定 input shape 和 num_classes
     input_shape = (7,)
     num_classes = 41  # 這裡的數字要根據你的問題設定
     batch_size=32
-    epochs=1000
-    data_drop_out_list = np.arange(0.0, 0.1, 0.1)
+    epochs=500
+    data_drop_out_list = np.arange(0.0, 1.1, 0.1)
     
     for data_drop_out in data_drop_out_list:
         # 創建 DANNModel    
@@ -351,16 +332,16 @@ if __name__ == "__main__":
             evaluator = Evaluator()
             dir = 'noise' if args.noise else None
             mde_list = evaluator.test(predicion_data_path_list, f'{args.work_dir}_{data_drop_out}', dir)
-            target_domain1_result.append(mde_list[0][1])
-            source_domain_reult.append(mde_list[1][1])
-            target_domain2_result.append(mde_list[2][1])
+            domain1_result.append(mde_list[0][1])
+            domain2_result.append(mde_list[1][1])
+            domain3_result.append(mde_list[2][1])
         elif args.fine_tune_data:
             dann_model.load_data(args.fine_tune_data, one_file=True)
             dann_model.fine_tune(args.model_path, batch_size, epochs)
         else:
             print('Please specify --training_source_domain_data/--training_target_domain_data or --testing_data_list option.')
 
-        os.chdir('..\\..\\..')
+        os.chdir('..\\..')
     
     if args.testing_data_list:
-        plot_lines(data_drop_out_list, target_domain1_result, source_domain_reult, target_domain2_result, 'Dropout_Data.png', 'Source_domain_to_Target_domain1')
+        plot_lines(data_drop_out_list, domain1_result, domain2_result, domain3_result, args.work_dir, 'Source_domain_to_Target_domain')

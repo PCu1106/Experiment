@@ -33,6 +33,10 @@ from tensorflow.keras.utils import plot_model
 sys.path.append('..\\..\\model_comparison')
 from walk_definitions import walk_class
 from evaluator import Evaluator
+sys.path.append('..')
+from drop_out_plot import plot_lines
+
+
 
 class AutoencoderDANNModel(DANNModel):
     def build_model(self):
@@ -177,16 +181,16 @@ if __name__ == "__main__":
     parser.add_argument('--noise', action='store_true', default=False, help='add noise or not')
     args = parser.parse_args()
 
-    target_domain1_result = []
-    source_domain_reult = []
-    target_domain2_result = []
+    domain1_result = []
+    domain2_result = []
+    domain3_result = []
 
     # 設定 input shape 和 num_classes
     input_shape = 7
     num_classes = 41  # 這裡的數字要根據你的問題設定
     batch_size=32
     epochs=500
-    data_drop_out_list = np.arange(0.0, 0.1, 0.1)
+    data_drop_out_list = np.arange(0.0, 1.05, 0.1)
     
     for data_drop_out in data_drop_out_list:
         # 創建 DANNModel    
@@ -217,16 +221,16 @@ if __name__ == "__main__":
             evaluator = Evaluator()
             dir = 'noise' if args.noise else None
             mde_list = evaluator.test(predicion_data_path_list, f'{args.work_dir}_{data_drop_out}', dir)
-            target_domain1_result.append(mde_list[0][1])
-            source_domain_reult.append(mde_list[1][1])
-            target_domain2_result.append(mde_list[2][1])
+            domain1_result.append(mde_list[0][1])
+            domain2_result.append(mde_list[1][1])
+            domain3_result.append(mde_list[2][1])
         elif args.fine_tune_data:
             dann_model.load_data(args.fine_tune_data, one_file=True)
             dann_model.fine_tune(args.model_path, batch_size, epochs)
         else:
             print('Please specify --training_source_domain_data/--training_target_domain_data or --testing_data_list option.')
 
-        os.chdir('..\\..\\..')
+        os.chdir('..\\..')
     
     if args.testing_data_list:
-        plot_lines(data_drop_out_list, target_domain1_result, source_domain_reult, target_domain2_result, 'Dropout_Data.png', 'Source_domain_to_Target_domain1')
+        plot_lines(data_drop_out_list, domain1_result, domain2_result, domain3_result, args.work_dir, 'Source_domain_to_Target_domain')
