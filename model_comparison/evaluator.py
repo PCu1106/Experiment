@@ -151,7 +151,7 @@ class Evaluator:
                 plt.text(x[j] + i * bar_width, v, f'{v:.3f}', ha='center', va='bottom')
 
         # 设置Y轴范围
-        plt.ylim(0, 3)
+        plt.ylim(0, 2)
         
         # 设置图表标题和轴标签
         plt.title(f"{total_model_name} MDE Comparison")

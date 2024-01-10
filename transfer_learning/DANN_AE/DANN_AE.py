@@ -62,7 +62,7 @@ class AutoencoderDANNModel(DANNModel):
     def build_feature_extractor(self, input_data):
         # Autoencoder layers
         x = layers.Dense(8, activation='relu', name='encoder_1')(input_data)
-        encoded = layers.Dense(16, activation='relu', name='encoder_ouput')(x)
+        encoded = layers.Dense(4, activation='relu', name='encoder_ouput')(x)
         x = layers.Dense(8, activation='relu', name='decoder_1')(encoded)
         decoded = layers.Dense(self.input_shape, activation='sigmoid', name='decoder_output')(x)
         
@@ -190,7 +190,7 @@ if __name__ == "__main__":
     num_classes = 41  # 這裡的數字要根據你的問題設定
     batch_size=32
     epochs=500
-    data_drop_out_list = np.arange(0.0, 1.05, 0.1)
+    data_drop_out_list = np.arange(0.0, 0.05, 0.1)
     
     for data_drop_out in data_drop_out_list:
         # 創建 DANNModel    

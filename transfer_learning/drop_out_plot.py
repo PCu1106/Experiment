@@ -1,3 +1,11 @@
+'''
+python .\drop_out_plot.py \
+    --model_name_list DANN DANN_AE \
+    --list_data_list D:\Experiment\transfer_learning\DANN\231116_231117\12\my_list.pkl \
+                    D:\Experiment\transfer_learning\DANN_AE\231116_231117\122\my_list.pkl \
+    --title Model_Comparison_in_Space_Changing
+'''
+
 import matplotlib.pyplot as plt
 import os
 import pickle
