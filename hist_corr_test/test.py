@@ -46,7 +46,7 @@ correlation = tf.reduce_mean(tf.linalg.diag_part(tf.abs(correlation_matrix)))
 
 print(correlation.numpy())
 
-bins = 60
+bins = 100
 hist1, _ = np.histogram(source_features, bins=bins, range=(0, 1))
 hist2, _ = np.histogram(target_features, bins=bins, range=(0, 1))
 
@@ -55,3 +55,8 @@ hist2 = hist2.astype(np.float32)  # 转换为32位浮点数
 
 hist_similarity = cv2.compareHist(hist1, hist2, cv2.HISTCMP_CORREL)
 print(f'hist_similarity: {hist_similarity}')
+
+test_feature = source_features[:2]
+print(test_feature)
+hist3, _ = np.histogram(test_feature, bins=bins, range=(0, 1))
+print(hist3)
