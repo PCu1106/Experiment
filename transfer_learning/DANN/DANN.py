@@ -34,7 +34,7 @@ import sys
 sys.path.append('..\\..\\model_comparison')
 from walk_definitions import walk_class
 from evaluator import Evaluator
-sys.path.append('..')
+sys.path.append('..\\model_comparison')
 from drop_out_plot import plot_lines
 
 @tf.custom_gradient
@@ -57,6 +57,9 @@ class DANNModel:
         os.chdir(work_dir)
         self.input_shape = input_shape
         self.num_classes = num_classes
+        self.X = None
+        self.yl = None
+        self.yd = None
         self.model = self.build_model()
         # 注册自定义层
         tf.keras.utils.get_custom_objects()['GradientReversalLayer'] = GradientReversalLayer
@@ -206,7 +209,7 @@ class DANNModel:
         # Compile the DANN model
         self.model.compile(optimizer='adam',
                            loss={'label_predictor_output': 'categorical_crossentropy', 'domain_classifier_output': 'binary_crossentropy'},
-                           loss_weights={'label_predictor_output': 0.5, 'domain_classifier_output': 0.5},
+                           loss_weights={'label_predictor_output': 0.33, 'domain_classifier_output': 0.67},
                            metrics={'label_predictor_output': 'accuracy', 'domain_classifier_output': 'accuracy'})
 
         # Define the ModelCheckpoint callback to save the model with the minimum total loss

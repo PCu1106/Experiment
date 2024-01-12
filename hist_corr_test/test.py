@@ -60,3 +60,45 @@ test_feature = source_features[:2]
 print(test_feature)
 hist3, _ = np.histogram(test_feature, bins=bins, range=(0, 1))
 print(hist3)
+
+import tensorflow as tf
+
+# 自定义损失函数 - HISTCMP_CORREL
+def histcmp_correl_loss(hist1, hist2):
+    correl = tf.image.ssim(hist1, hist2, max_val=1.0)
+    return 1.0 - correl
+
+# 自定义损失函数 - Domain loss
+def domain_loss(y_true, y_pred):
+    # 提取每个domain的样本
+    target_samples = tf.boolean_mask(y_pred, y_true == 0)
+    source_samples = tf.boolean_mask(y_pred, y_true == 1)
+    
+    # 计算直方图
+    hist_target = tf.histogram_fixed_width(target_samples, [0.0, 1.0], nbins=100)
+    hist_source = tf.histogram_fixed_width(source_samples, [0.0, 1.0], nbins=100)
+    
+    # 计算HISTCMP_CORREL损失
+    loss = histcmp_correl_loss(hist_target, hist_source)
+    return loss
+
+# 构建模型
+input_dim = 7
+output_dim = 41
+
+model = tf.keras.models.Sequential([
+    # 特征提取器
+    tf.keras.layers.Dense(64, activation='relu', input_shape=(input_dim,)),
+    tf.keras.layers.Dense(128, activation='relu'),
+    
+    # 标签预测器
+    tf.keras.layers.Dense(output_dim, activation='softmax', name='class_label_output'),
+    
+    # Domain预测器
+    tf.keras.layers.Dense(1, activation='sigmoid', name='domain_label_output')
+])
+
+# 编译模型并定义损失函数
+model.compile(optimizer='adam', 
+              loss={'class_label_output': 'categorical_crossentropy', 'domain_label_output': domain_loss},
+              metrics={'class_label_output': 'accuracy', 'domain_label_output': 'accuracy'})
