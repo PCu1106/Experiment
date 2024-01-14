@@ -1,3 +1,21 @@
+'''
+python .\DANN_CORR.py \
+    --training_source_domain_data D:\Experiment\data\220318\GalaxyA51\wireless_training.csv \
+    --training_target_domain_data D:\Experiment\data\231116\GalaxyA51\wireless_training.csv \
+    --model_path 220318_231116.pth \
+    --work_dir 220318_231116\0.1_10
+python .\DANN_CORR.py \
+    --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes \
+                        D:\Experiment\data\220318\GalaxyA51\routes \
+                        D:\Experiment\data\231117\GalaxyA51\routes \
+    --model_path 220318_231116.pth \
+    --work_dir 220318_231116\0.1_10
+python ..\..\model_comparison\evaluator.py \
+    --model_name DANN \
+    --directory 220318_231116\12_0.0 \
+    --source_domain 220318 \
+    --target_domain 231116
+'''
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -5,10 +23,14 @@ from torch.utils.data import Dataset, DataLoader
 import matplotlib.pyplot as plt
 from torchviz import make_dot
 from sklearn.model_selection import train_test_split
-
 import numpy as np
+import pandas as pd
 import cv2
 import argparse
+import os
+import sys
+sys.path.append('..\\..\\model_comparison')
+from walk_definitions import walk_class
 
 class FeatureExtractor(nn.Module):
     def __init__(self):
@@ -59,15 +81,13 @@ class IndoorLocalizationDataset(Dataset):
         return torch.tensor(features, dtype=torch.float32), torch.tensor(label, dtype=torch.long)
 
 class HistCorrDANNModel:
-    def __init__(self, source_data_path, target_data_path, model_save_path='saved_model.pth', loss_weights=None):
-        self.source_dataset = IndoorLocalizationDataset(source_data_path)
-        self.target_dataset = IndoorLocalizationDataset(target_data_path)
+    def __init__(self, model_save_path='saved_model.pth', loss_weights=None, work_dir=None):
+        if not os.path.exists(work_dir):
+            os.makedirs(work_dir)
+        os.chdir(work_dir)
         self.batch_size = 32
-        self.source_data_loader = DataLoader(self.source_dataset, batch_size=self.batch_size, shuffle=True)
-        self.target_data_loader = DataLoader(self.target_dataset, batch_size=self.batch_size, shuffle=True)
         self.loss_weights = loss_weights if loss_weights is not None else [0.1, 10]
 
-        self._initialize_data_loaders()
         self._initialize_model()
         self._initialize_optimizer()
         self._initialize_metrics()
@@ -75,7 +95,10 @@ class HistCorrDANNModel:
         self.model_save_path = model_save_path
         self.best_val_total_loss = float('inf')  # Initialize with positive infinity
 
-    def _initialize_data_loaders(self):
+    def load_train_data(self, source_data_path, target_data_path):
+        self.source_dataset = IndoorLocalizationDataset(source_data_path)
+        self.target_dataset = IndoorLocalizationDataset(target_data_path)
+
         # Split source data into training and validation sets
         source_train, source_val = train_test_split(self.source_dataset, test_size=0.2, random_state=42)
         self.source_train_loader = DataLoader(source_train, batch_size=self.batch_size, shuffle=True)
@@ -85,6 +108,10 @@ class HistCorrDANNModel:
         target_train, target_val = train_test_split(self.target_dataset, test_size=0.2, random_state=42)
         self.target_train_loader = DataLoader(target_train, batch_size=self.batch_size, shuffle=True)
         self.target_val_loader = DataLoader(target_val, batch_size=self.batch_size, shuffle=False)
+
+    def load_test_data(self, test_data_path):
+        self.test_dataset = IndoorLocalizationDataset(test_data_path)
+        self.test_loader = DataLoader(self.test_dataset, shuffle=False)
 
     def _initialize_model(self):
         self.feature_extractor = FeatureExtractor()
@@ -96,9 +123,9 @@ class HistCorrDANNModel:
         self.domain_criterion = nn.CrossEntropyLoss()
 
     def _initialize_metrics(self):
-        self.train_losses, self.label_losses, self.domain_losses = [], [], []
+        self.total_losses, self.label_losses, self.domain_losses = [], [], []
         self.source_accuracies, self.target_accuracies, self.total_accuracies = [], [], []
-        self.val_train_losses, self.val_label_losses, self.val_domain_losses = [], [], []
+        self.val_total_losses, self.val_label_losses, self.val_domain_losses = [], [], []
         self.val_source_accuracies, self.val_target_accuracies, self.val_total_accuracies = [], [], []
 
     def domain_invariance_loss(self, source_hist, target_hist):
@@ -107,113 +134,85 @@ class HistCorrDANNModel:
 
     def train(self, num_epochs=10):
         for epoch in range(num_epochs):
-            source_correct_predictions = 0
-            source_total_samples = 0
-            target_correct_predictions = 0
-            target_total_samples = 0
-            # Training
-            for source_batch, target_batch in zip(self.source_data_loader, self.target_data_loader):
-                source_features, source_labels = source_batch
-                target_features, target_labels = target_batch
+            loss_list, acc_list = self._run_epoch(zip(self.source_train_loader, self.target_train_loader), training=True)
 
-                min_batch_size = min(source_labels.size(0), target_labels.size(0))
-                source_features, source_labels = source_features[:min_batch_size], source_labels[:min_batch_size]
-                target_features, target_labels = target_features[:min_batch_size], target_labels[:min_batch_size]
+            self.total_losses.append(loss_list[0])
+            self.label_losses.append(loss_list[1])
+            self.domain_losses.append(loss_list[2])
+            self.total_accuracies.append(acc_list[0])
+            self.source_accuracies.append(acc_list[1])
+            self.target_accuracies.append(acc_list[2])
 
-                source_features, source_labels_pred = self.domain_adaptation_model(source_features)
-                target_features, target_labels_pred = self.domain_adaptation_model(target_features)
+            # Validation
+            with torch.no_grad():
+                val_loss_list, val_acc_list = self._run_epoch(zip(self.source_val_loader, self.target_val_loader), training=False)
 
-                label_loss_source = self.domain_criterion(source_labels_pred, source_labels)
-                label_loss_target = self.domain_criterion(target_labels_pred, target_labels)
-                label_loss = (label_loss_source + label_loss_target) / 2
+                self.val_total_losses.append(val_loss_list[0])
+                self.val_label_losses.append(val_loss_list[1])
+                self.val_domain_losses.append(val_loss_list[2])
+                self.val_total_accuracies.append(val_acc_list[0])
+                self.val_source_accuracies.append(val_acc_list[1])
+                self.val_target_accuracies.append(val_acc_list[2])
+                # print(f'Validation Epoch [{epoch+1}/{num_epochs}], Total Loss: {val_total_loss}, Label Loss: {val_label_loss}, Domain Loss: {val_domain_loss}, Source Accuracy: {val_source_accuracy}, Target Accuracy: {val_target_accuracy}')
+            
+            # print(f'Epoch [{epoch+1}/{num_epochs}], Total Loss: {total_loss}, Label Loss: {label_loss}, Domain Loss: {domain_loss}, Source Accuracy: {source_accuracy}, Target Accuracy: {target_accuracy}')
+            print(f'Epoch [{epoch+1}/{num_epochs}], loss: {self.total_losses[-1]:.4f}, label loss: {self.label_losses[-1]:.4f}, domain loss: {self.domain_losses[-1]:.4f}, acc: {self.total_accuracies[-1]:.4f},\nval_loss: {self.val_total_losses[-1]:.4f}, val_label loss: {self.val_label_losses[-1]:.4f}, val_domain loss: {self.val_domain_losses[-1]:.4f}, val_acc: {self.val_total_accuracies[-1]:.4f}')
+            
+            # Check if the current total loss is the best so far
+            if self.val_total_losses[-1] < self.best_val_total_loss:
+                # Save the model parameters
+                print(f'val_total_loss: {self.val_total_losses[-1]:.4f} < best_val_total_loss: {self.best_val_total_loss:.4f}', end=', ')
+                self.save_model()
+                self.best_val_total_loss = self.val_total_losses[-1]
 
-                source_hist = cv2.calcHist([source_features.detach().numpy().flatten()], [0], None, [100], [0, 1])
-                target_hist = cv2.calcHist([target_features.detach().numpy().flatten()], [0], None, [100], [0, 1])
-                domain_loss = self.domain_invariance_loss(source_hist, target_hist)
+    def _run_epoch(self, data_loader, training=False):
+        source_correct_predictions, source_total_samples = 0, 0
+        target_correct_predictions, target_total_samples = 0, 0
+        for source_batch, target_batch in data_loader:
+            source_features, source_labels = source_batch
+            target_features, target_labels = target_batch
 
-                total_loss = self.loss_weights[0] * label_loss + self.loss_weights[1] * domain_loss
+            min_batch_size = min(source_labels.size(0), target_labels.size(0))
+            source_features, source_labels = source_features[:min_batch_size], source_labels[:min_batch_size]
+            target_features, target_labels = target_features[:min_batch_size], target_labels[:min_batch_size]
 
+            source_features, source_labels_pred = self.domain_adaptation_model(source_features)
+            target_features, target_labels_pred = self.domain_adaptation_model(target_features)
+
+            label_loss_source = self.domain_criterion(source_labels_pred, source_labels)
+            label_loss_target = self.domain_criterion(target_labels_pred, target_labels)
+            label_loss = (label_loss_source + label_loss_target) / 2
+
+            source_hist = cv2.calcHist([source_features.detach().numpy().flatten()], [0], None, [100], [0, 1])
+            target_hist = cv2.calcHist([target_features.detach().numpy().flatten()], [0], None, [100], [0, 1])
+            domain_loss = self.domain_invariance_loss(source_hist, target_hist)
+
+            total_loss = self.loss_weights[0] * label_loss + self.loss_weights[1] * domain_loss
+
+            if training:
                 self.optimizer.zero_grad()
                 total_loss.backward()
                 self.optimizer.step()
 
-                _, source_preds = torch.max(source_labels_pred, 1)
-                source_correct_predictions += (source_preds == source_labels).sum().item()
-                source_total_samples += source_labels.size(0)
-                source_accuracy = source_correct_predictions / source_total_samples
+            _, source_preds = torch.max(source_labels_pred, 1)
+            source_correct_predictions += (source_preds == source_labels).sum().item()
+            source_total_samples += source_labels.size(0)
+            source_accuracy = source_correct_predictions / source_total_samples
 
-                _, target_preds = torch.max(target_labels_pred, 1)
-                target_correct_predictions += (target_preds == target_labels).sum().item()
-                target_total_samples += target_labels.size(0)
-                target_accuracy = target_correct_predictions / target_total_samples
-
-            self.train_losses.append(total_loss.item())
-            self.label_losses.append(label_loss.item())
-            self.domain_losses.append(domain_loss)
-            self.source_accuracies.append(source_accuracy)
-            self.target_accuracies.append(target_accuracy)
-            self.total_accuracies.append((source_accuracy + target_accuracy) / 2)
-            # Validation
-            with torch.no_grad():
-                val_source_correct_predictions = 0
-                val_source_total_samples = 0
-                val_target_correct_predictions = 0
-                val_target_total_samples = 0
-
-                for val_source_batch, val_target_batch in zip(self.source_val_loader, self.target_val_loader):
-                    val_source_features, val_source_labels = val_source_batch
-                    val_target_features, val_target_labels = val_target_batch
-
-                    val_source_features, val_source_labels_pred = self.domain_adaptation_model(val_source_features)
-                    val_target_features, val_target_labels_pred = self.domain_adaptation_model(val_target_features)
-
-                    val_label_loss_source = self.domain_criterion(val_source_labels_pred, val_source_labels)
-                    val_label_loss_target = self.domain_criterion(val_target_labels_pred, val_target_labels)
-                    val_label_loss = (val_label_loss_source + val_label_loss_target) / 2
-
-                    val_source_hist = cv2.calcHist([val_source_features.detach().numpy().flatten()], [0], None, [100], [0, 1])
-                    val_target_hist = cv2.calcHist([val_target_features.detach().numpy().flatten()], [0], None, [100], [0, 1])
-                    val_domain_loss = self.domain_invariance_loss(val_source_hist, val_target_hist)
-
-                    val_total_loss = self.loss_weights[0] * val_label_loss + self.loss_weights[1] * val_domain_loss
-
-                    _, val_source_preds = torch.max(val_source_labels_pred, 1)
-                    val_source_correct_predictions += (val_source_preds == val_source_labels).sum().item()
-                    val_source_total_samples += val_source_labels.size(0)
-
-                    _, val_target_preds = torch.max(val_target_labels_pred, 1)
-                    val_target_correct_predictions += (val_target_preds == val_target_labels).sum().item()
-                    val_target_total_samples += val_target_labels.size(0)
-
-                    val_source_accuracy = val_source_correct_predictions / val_source_total_samples
-                    val_target_accuracy = val_target_correct_predictions / val_target_total_samples
-
-                self.val_train_losses.append(val_total_loss.item())
-                self.val_label_losses.append(val_label_loss.item())
-                self.val_domain_losses.append(val_domain_loss)
-                self.val_source_accuracies.append(val_source_accuracy)
-                self.val_target_accuracies.append(val_target_accuracy)
-                self.val_total_accuracies.append((val_source_accuracy + val_target_accuracy) / 2)
-                # print(f'Validation Epoch [{epoch+1}/{num_epochs}], Total Loss: {val_total_loss}, Label Loss: {val_label_loss}, Domain Loss: {val_domain_loss}, Source Accuracy: {val_source_accuracy}, Target Accuracy: {val_target_accuracy}')
-            
-            # print(f'Epoch [{epoch+1}/{num_epochs}], Total Loss: {total_loss}, Label Loss: {label_loss}, Domain Loss: {domain_loss}, Source Accuracy: {source_accuracy}, Target Accuracy: {target_accuracy}')
-            total_acc = (source_accuracy + target_accuracy) / 2
-            val_total_acc = (val_source_accuracy + val_target_accuracy) / 2
-            print(f'Epoch [{epoch+1}/{num_epochs}], loss: {total_loss:.4f}, label loss: {label_loss:4f}, domain loss: {domain_loss:4f}, acc: {total_acc:.4f},\nval_loss: {val_total_loss:.4f}, val_label loss: {val_label_loss:4f}, val_domain loss: {val_domain_loss:4f}, val_acc: {val_total_acc:.4f}')
-            
-            # Check if the current total loss is the best so far
-            if val_total_loss < self.best_val_total_loss:
-                # Save the model parameters
-                print(f'val_total_loss: {val_total_loss:.4f} < best_val_total_loss: {self.best_val_total_loss:.4f}', end=', ')
-                self.save_model()
-                self.best_val_total_loss = val_total_loss
+            _, target_preds = torch.max(target_labels_pred, 1)
+            target_correct_predictions += (target_preds == target_labels).sum().item()
+            target_total_samples += target_labels.size(0)
+            target_accuracy = target_correct_predictions / target_total_samples
+            loss_list = [total_loss.item(), label_loss.item(), domain_loss]
+            acc_list = [(source_accuracy + target_accuracy) / 2, source_accuracy, target_accuracy]
+        return loss_list, acc_list
 
     def save_model(self):
         torch.save(self.domain_adaptation_model.state_dict(), self.model_save_path)
         print(f"Model parameters saved to {self.model_save_path}")
 
     def plot_training_results(self):
-        epochs_list = np.arange(0, len(self.train_losses), 1)
+        epochs_list = np.arange(0, len(self.total_losses), 1)
         label_losses_values = [loss for loss in self.label_losses]
         val_label_losses_values = [loss for loss in self.val_label_losses]
 
@@ -231,6 +230,7 @@ class HistCorrDANNModel:
         # Subplot for Training Accuracy (Top Right)
         plt.subplot(2, 2, 2)
         plt.plot(epochs_list, self.total_accuracies, label='Accuracy', color='blue')
+        plt.plot(epochs_list, self.val_total_accuracies, label='Val Accuracy', color='darkorange')
         plt.xlabel('Epochs')
         plt.ylabel('Accuracy')
         plt.legend()
@@ -253,7 +253,7 @@ class HistCorrDANNModel:
         plt.suptitle('Training Curve')
 
         plt.tight_layout()  # Adjust layout for better spacing
-        plt.show()
+        plt.savefig('loss_and_accuracy.png')
 
     def save_model_architecture(self, file_path='model_architecture'):
         # Create a dummy input for visualization
@@ -266,14 +266,76 @@ class HistCorrDANNModel:
         graph.render(file_path, format='png')
         print(f"Model architecture saved as {file_path}")
 
+    def load_model(self, model_path):
+        if os.path.exists(model_path):
+            self.domain_adaptation_model.load_state_dict(torch.load(model_path))
+        else:
+            print(f"Error: Model file not found at {model_path}")
+
+    def predict(self, features):
+        self.domain_adaptation_model.eval()
+        with torch.no_grad():
+            features, labels_pred = self.domain_adaptation_model(features)
+        return labels_pred
+
+    def generate_predictions(self, model_path):
+        self.load_model(model_path)
+        prediction_results = {
+            'label': [],
+            'pred': []
+        }
+        # 進行預測
+        self.domain_adaptation_model.eval()
+        with torch.no_grad():
+            for test_batch, true_label_batch in self.test_loader:
+                features, labels_pred = self.domain_adaptation_model(test_batch)
+                _, preds = torch.max(labels_pred, 1)
+                predicted_labels = preds + 1  # 加 1 是为了将索引转换为 1 到 41 的标签
+                label = true_label_batch + 1
+                # 將預測結果保存到 prediction_results 中
+                prediction_results['label'].extend(label.tolist())
+                prediction_results['pred'].extend(predicted_labels.tolist())
+        return pd.DataFrame(prediction_results)
+
 # Example usage
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train DANN Model')
-    parser.add_argument('--training_source_domain_data', type=str, required=True, help='Path to the source domain data file')
-    parser.add_argument('--training_target_domain_data', type=str, required=True, help='Path to the target domain data file')
+    parser.add_argument('--training_source_domain_data', type=str, help='Path to the source domain data file')
+    parser.add_argument('--training_target_domain_data', type=str, help='Path to the target domain data file')
+    parser.add_argument('--testing_data_list', nargs='+', type=str, help='List of testing data paths')
+    parser.add_argument('--model_path', type=str, default='my_model.pth', help='path of .pth file of model')
+    parser.add_argument('--work_dir', type=str, default='DANN_CORR', help='create new directory to save result')
     args = parser.parse_args()
-    loss_weights = [1, 1]
-    hist_corr_dann_model = HistCorrDANNModel(args.training_source_domain_data, args.training_target_domain_data, loss_weights=loss_weights)
-    hist_corr_dann_model.save_model_architecture()
-    hist_corr_dann_model.train(num_epochs=10)
-    hist_corr_dann_model.plot_training_results()
+    loss_weights = [0.1, 10]
+    epoch = 500
+
+    data_drop_out_list = np.arange(0.0, 0.1, 0.1)
+    
+    for data_drop_out in data_drop_out_list:
+        # 創建 DANNModel    
+        dann_model = HistCorrDANNModel(model_save_path=args.model_path, loss_weights=loss_weights, work_dir=f'{args.work_dir}_{data_drop_out:.1f}')
+        dann_model.save_model_architecture()
+        # 讀取資料
+        if args.training_source_domain_data and args.training_target_domain_data:
+            # 訓練模型
+            dann_model.load_train_data(args.training_source_domain_data, args.training_target_domain_data)
+            dann_model.train(num_epochs=epoch)
+            dann_model.plot_training_results()
+        elif args.testing_data_list:
+            testing_data_path_list = args.testing_data_list
+            for testing_data_path in testing_data_path_list:
+                for walk_str, walk_list in walk_class:
+                    prediction_results = pd.DataFrame()
+                    for walk in walk_list:
+                        # 加載數據
+                        dann_model.load_test_data(f"{testing_data_path}\\{walk}.csv")
+                        results = dann_model.generate_predictions(args.model_path)
+                        prediction_results = pd.concat([prediction_results, results], ignore_index=True)
+                    split_path = testing_data_path.split('\\')
+                    predictions_dir = f'predictions/{split_path[3]}'
+                    os.makedirs(predictions_dir, exist_ok=True)
+                    prediction_results.to_csv(os.path.join(predictions_dir, f'{walk_str}_predictions.csv'), index=False)
+        else:
+            print('Please specify --training_source_domain_data/--training_target_domain_data or --testing_data_list option.')
+
+        os.chdir('..\\..')
