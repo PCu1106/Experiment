@@ -1,8 +1,9 @@
 '''
 python .\drop_out_plot.py \
-    --model_name_list DANN DANN_AE \
+    --model_name_list DANN DANN_AE DANN_CORR \
     --list_data_list D:\Experiment\transfer_learning\DANN\231116_231117\12\my_list.pkl \
                     D:\Experiment\transfer_learning\DANN_AE\231116_231117\122\my_list.pkl \
+                    D:\Experiment\transfer_learning\DANN_CORR\231116_231117\0.1_10\my_list.pkl \
     --title Model_Comparison_in_Space_Changing
 '''
 
@@ -11,11 +12,13 @@ import os
 import pickle
 import argparse
 
-def plot_lines(data_drop_out_list, domain1, domain2, domain3, output_path, title):
-    domain = domain3
-    # plt.plot(data_drop_out_list, domain1, marker='o', label='Target Domain', color='blue')
-    plt.plot(data_drop_out_list, domain, marker='o', label='Target Domain', color='orange')
-    # plt.plot(data_drop_out_list, domain3, marker='o', label='Target Domain', color='green')
+def plot_lines(data_drop_out_list, domain, domain_name=None, output_path=None, title=None):
+    if domain_name == '220318':
+        plt.plot(data_drop_out_list, domain, marker='o', label='Target Domain', color='blue')
+    elif domain_name == '231116':
+        plt.plot(data_drop_out_list, domain, marker='o', label='Target Domain', color='orange')
+    elif domain_name == '231117':
+        plt.plot(data_drop_out_list, domain, marker='o', label='Target Domain', color='green')
 
     plt.xlabel('data dropout ratio')
     plt.ylabel('MDE (m)')
@@ -26,10 +29,8 @@ def plot_lines(data_drop_out_list, domain1, domain2, domain3, output_path, title
     plt.ylim(0, 3)
 
     # 在每個點的上方顯示數字
-    for x, y1, y2, y3 in zip(data_drop_out_list, domain1, domain2, domain3):
-        # plt.text(x, y1, f'{y1:.3f}', ha='center', va='bottom')
-        plt.text(x, y2, f'{y2:.3f}', ha='center', va='bottom')
-        # plt.text(x, y3, f'{y3:.3f}', ha='center', va='bottom')
+    for x, y in zip(data_drop_out_list, domain):
+        plt.text(x, y, f'{y:.3f}', ha='center', va='bottom')
     if not os.path.exists(output_path):
         os.makedirs(output_path)
     os.chdir(output_path)

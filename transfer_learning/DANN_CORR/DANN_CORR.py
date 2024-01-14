@@ -31,6 +31,9 @@ import os
 import sys
 sys.path.append('..\\..\\model_comparison')
 from walk_definitions import walk_class
+from evaluator import Evaluator
+sys.path.append('..\\model_comparison')
+from drop_out_plot import plot_lines
 
 class FeatureExtractor(nn.Module):
     def __init__(self):
@@ -95,9 +98,20 @@ class HistCorrDANNModel:
         self.model_save_path = model_save_path
         self.best_val_total_loss = float('inf')  # Initialize with positive infinity
 
-    def load_train_data(self, source_data_path, target_data_path):
+    def load_train_data(self, source_data_path, target_data_path, drop_out_rate=0.0):
         self.source_dataset = IndoorLocalizationDataset(source_data_path)
         self.target_dataset = IndoorLocalizationDataset(target_data_path)
+
+        # Drop samples from the target domain based on drop_out_rate
+        if drop_out_rate > 0:
+            num_samples_to_drop = int(len(self.target_dataset) * drop_out_rate)
+            if drop_out_rate >= 1.0:
+                num_samples_to_drop = num_samples_to_drop - 2
+            drop_indices = np.random.choice(len(self.target_dataset), num_samples_to_drop, replace=False)
+            self.target_dataset.data = np.delete(self.target_dataset.data, drop_indices, axis=0)
+
+        print(f"Total Source Dataset Size: {len(self.source_dataset)}")
+        print(f"Total Target Dataset Size: {len(self.target_dataset)}")
 
         # Split source data into training and validation sets
         source_train, source_val = train_test_split(self.source_dataset, test_size=0.2, random_state=42)
@@ -308,8 +322,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
     loss_weights = [0.1, 10]
     epoch = 500
+    
+    domain1_result = []
+    domain2_result = []
+    domain3_result = []
 
-    data_drop_out_list = np.arange(0.0, 0.1, 0.1)
+    data_drop_out_list = np.arange(0.0, 1.05, 0.1)
     
     for data_drop_out in data_drop_out_list:
         # 創建 DANNModel    
@@ -318,7 +336,7 @@ if __name__ == "__main__":
         # 讀取資料
         if args.training_source_domain_data and args.training_target_domain_data:
             # 訓練模型
-            dann_model.load_train_data(args.training_source_domain_data, args.training_target_domain_data)
+            dann_model.load_train_data(args.training_source_domain_data, args.training_target_domain_data, data_drop_out)
             dann_model.train(num_epochs=epoch)
             dann_model.plot_training_results()
         elif args.testing_data_list:
@@ -335,7 +353,16 @@ if __name__ == "__main__":
                     predictions_dir = f'predictions/{split_path[3]}'
                     os.makedirs(predictions_dir, exist_ok=True)
                     prediction_results.to_csv(os.path.join(predictions_dir, f'{walk_str}_predictions.csv'), index=False)
+            predicion_data_path_list = os.listdir('predictions/')
+            evaluator = Evaluator()
+            mde_list = evaluator.test(predicion_data_path_list, f'{args.work_dir}_{data_drop_out}')
+            domain1_result.append(mde_list[0][1])
+            domain2_result.append(mde_list[1][1])
+            domain3_result.append(mde_list[2][1])
         else:
             print('Please specify --training_source_domain_data/--training_target_domain_data or --testing_data_list option.')
 
         os.chdir('..\\..')
+
+    if args.testing_data_list:
+        plot_lines(data_drop_out_list, domain3_result, domain_name='231117', output_path=args.work_dir, title='Source_domain_to_Target_domain')
