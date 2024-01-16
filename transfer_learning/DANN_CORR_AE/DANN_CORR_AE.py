@@ -14,6 +14,8 @@ python .\DANN_CORR_AE.py \
 import torch.nn.functional as F
 import torch
 import torch.nn as nn
+from itertools import cycle
+import math
 import cv2
 import sys
 sys.path.append('..\\DANN_CORR')
@@ -64,7 +66,7 @@ class HistCorrAutoencoderDANNModel(HistCorrDANNModel):
 
     def train(self, num_epochs=10):
         for epoch in range(num_epochs):
-            loss_list, acc_list = self._run_epoch(zip(self.source_train_loader, self.target_train_loader), training=True)
+            loss_list, acc_list = self._run_epoch([self.source_train_loader, self.target_train_loader], training=True)
 
             self.total_losses.append(loss_list[0])
             self.label_losses.append(loss_list[1])
@@ -76,7 +78,7 @@ class HistCorrAutoencoderDANNModel(HistCorrDANNModel):
 
             # Validation
             with torch.no_grad():
-                val_loss_list, val_acc_list = self._run_epoch(zip(self.source_val_loader, self.target_val_loader), training=False)
+                val_loss_list, val_acc_list = self._run_epoch([self.source_val_loader, self.target_val_loader], training=False)
 
                 self.val_total_losses.append(val_loss_list[0])
                 self.val_label_losses.append(val_loss_list[1])
@@ -98,15 +100,15 @@ class HistCorrAutoencoderDANNModel(HistCorrDANNModel):
     def _run_epoch(self, data_loader, training=False):
         source_correct_predictions, source_total_samples = 0, 0
         target_correct_predictions, target_total_samples = 0, 0
+        # Create infinite iterators over datasets
+        source_iter = cycle(data_loader[0])
+        target_iter = cycle(data_loader[1])
+        # Calculate num_batches based on the larger dataset
+        num_batches = math.ceil(max(len(data_loader[0]), len(data_loader[1])))
 
-        for source_batch, target_batch in data_loader:
-            source_features, source_labels = source_batch
-            target_features, target_labels = target_batch
-
-            min_batch_size = min(source_labels.size(0), target_labels.size(0))
-            source_features, source_labels = source_features[:min_batch_size], source_labels[:min_batch_size]
-            target_features, target_labels = target_features[:min_batch_size], target_labels[:min_batch_size]
-
+        for _ in range(num_batches):
+            source_features, source_labels = next(source_iter)
+            target_features, target_labels = next(target_iter)
             # Autoencoder forward pass
             source_encoded_features = self.feature_extractor(source_features, use_decoder=False)
             target_encoded_features = self.feature_extractor(target_features, use_decoder=False)
@@ -209,14 +211,14 @@ if __name__ == "__main__":
     parser.add_argument('--model_path', type=str, default='my_model.pth', help='path of .pth file of model')
     parser.add_argument('--work_dir', type=str, default='DANN_CORR', help='create new directory to save result')
     args = parser.parse_args()
-    loss_weights = [0.5, 2, 2]
+    loss_weights = [0.1, 2, 2]
     epoch = 500
     
     domain1_result = []
     domain2_result = []
     domain3_result = []
 
-    data_drop_out_list = np.arange(0.0, 0.05, 0.1)
+    data_drop_out_list = np.arange(0.0, 1.05, 0.1)
     
     for data_drop_out in data_drop_out_list:
         # 創建 DANNModel    
@@ -254,4 +256,4 @@ if __name__ == "__main__":
         os.chdir('..\\..')
 
     if args.testing_data_list:
-        plot_lines(data_drop_out_list, domain3_result, domain_name='231117', output_path=args.work_dir, title='Source_domain_to_Target_domain')
+        plot_lines(data_drop_out_list, domain2_result, domain_name='231116', output_path=args.work_dir, title='Source_domain_to_Target_domain')
