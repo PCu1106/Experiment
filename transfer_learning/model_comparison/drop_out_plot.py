@@ -1,9 +1,19 @@
 '''
+Time:
 python .\drop_out_plot.py \
-    --model_name_list DANN DANN_AE DANN_CORR \
+    --model_name_list DANN DANN_AE DANN_CORR DANN_CORR_AE \
+    --list_data_list D:\Experiment\transfer_learning\DANN\220318_231116\12\my_list.pkl \
+                    D:\Experiment\transfer_learning\DANN_AE\220318_231116\122\my_list.pkl \
+                    D:\Experiment\transfer_learning\DANN_CORR\220318_231116\0.1_10\my_list.pkl \
+                    D:\Experiment\transfer_learning\DANN_CORR_AE\220318_231116\0.1_2_2\my_list.pkl \
+    --title Model_Comparison_in_Time_Changing
+Space:
+python .\drop_out_plot.py \
+    --model_name_list DANN DANN_AE DANN_CORR DANN_CORR_AE \
     --list_data_list D:\Experiment\transfer_learning\DANN\231116_231117\12\my_list.pkl \
                     D:\Experiment\transfer_learning\DANN_AE\231116_231117\122\my_list.pkl \
                     D:\Experiment\transfer_learning\DANN_CORR\231116_231117\0.1_10\my_list.pkl \
+                    D:\Experiment\transfer_learning\DANN_CORR_AE\231116_231117\0.1_2_2\my_list.pkl \
     --title Model_Comparison_in_Space_Changing
 '''
 
@@ -45,7 +55,7 @@ def model_comparison(model_name_list, list_data_list, title):
     plt.figure(figsize=(10, 6))
 
     # Define colors for the first three models
-    colors = ['red', 'black', 'purple']
+    colors = ['red', 'black', 'purple', 'brown']
 
     for i, (model_name, data_path) in enumerate(zip(model_name_list, list_data_list)):
         with open(data_path, 'rb') as file:
@@ -56,9 +66,9 @@ def model_comparison(model_name_list, list_data_list, title):
 
         plt.plot(dropout_ratios, data_list, label=model_name, marker='o', color=color)
 
-        # Annotate each point with its value
-        for x, y in zip(dropout_ratios, data_list):
-            plt.annotate(f'{y:.2f}', (x, y), textcoords="offset points", xytext=(0, 5), ha='center')
+        # # Annotate each point with its value
+        # for x, y in zip(dropout_ratios, data_list):
+        #     plt.annotate(f'{y:.3f}', (x, y), textcoords="offset points", xytext=(0, 5), ha='center')
 
     plt.xlabel('data dropout ratio')
     plt.ylabel('MDE (m)')
@@ -66,7 +76,7 @@ def model_comparison(model_name_list, list_data_list, title):
     plt.legend()
     plt.grid(True)
     plt.xticks(dropout_ratios, labels=[f'{x:.1f}' for x in dropout_ratios])
-    plt.ylim(0, 2)
+    plt.ylim(0.5, 2)
     plt.savefig(f'Dropout_Data_{title}.png')
 
 if __name__ == "__main__":

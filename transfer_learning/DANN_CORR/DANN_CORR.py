@@ -11,8 +11,8 @@ python .\DANN_CORR.py \
     --model_path 220318_231116.pth \
     --work_dir 220318_231116\0.1_10
 python ..\..\model_comparison\evaluator.py \
-    --model_name DANN \
-    --directory 220318_231116\12_0.0 \
+    --model_name DANN_CORR \
+    --directory 220318_231116\0.1_10_0.0 \
     --source_domain 220318 \
     --target_domain 231116
 '''
