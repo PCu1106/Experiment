@@ -130,18 +130,32 @@ if __name__ == '__main__':
     plt.savefig(f"{args.experiment_name}_bar.png")
     plt.clf()
 
-    # 繪製箱型圖
-    domain_error = list(zip(model1_error, model2_error, model3_error, model4_error))
-    for i, domain in enumerate(['source domain', 'target domain']):
-        plt.boxplot(domain_error[i], labels=model_names)
-        # 設定標題和標籤
-        plt.title(f'Comparison of {domain} Model Errors')
-        plt.xlabel('Models')
-        plt.ylabel('Error')
-        # 设置Y轴范围
-        plt.ylim(0, 5)
+    errors = [model1_error, model2_error, model3_error, model4_error]
+    # 設定 source domain 和 target domain 的位置
+    positions = np.array(range(len(model_names))) * 2.0  # 每隔2的位置
+    # 將 source domain 跟 target domain 分別放入一個列表
+    source_errors = [error[0] for error in errors]
+    target_errors = [error[1] for error in errors] 
 
-        plt.title(f'{args.experiment_name} {domain} Box of Errors')
-        # 顯示圖形
-        plt.savefig(f"{args.experiment_name} {domain}_box.png")
-        plt.clf()
+    # 設定中位數線的顏色
+    medianprops = dict(linestyle='-', linewidth=2, color='red')
+    # 設定箱型圖的顏色
+    boxprops = dict(linestyle='-', linewidth=2, color=color_list[0])
+    # 繪製 source domain 的箱型圖
+    plt.boxplot(source_errors, positions=positions - 0.4, labels=model_names, widths=0.4, boxprops=boxprops, medianprops=medianprops)
+    # 繪製 target domain 的箱型圖
+    # 設定箱型圖的顏色
+    boxprops = dict(linestyle='-', linewidth=2, color=color_list[1])
+    plt.boxplot(target_errors, positions=positions + 0.4, labels=model_names, widths=0.4, boxprops=boxprops, medianprops=medianprops)
+
+    # 設定標題和標籤
+    plt.xlabel('Models')
+    plt.ylabel('Error')
+    plt.title(f'{args.experiment_name} Box of Errors')
+    # 設定x軸刻度
+    plt.legend(['Source Domain', 'Target Domain'])
+
+    plt.xticks(positions, model_names)
+    # 顯示圖形
+    plt.savefig(f"{args.experiment_name} {domain}_box.png")
+    plt.clf()
