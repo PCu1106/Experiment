@@ -43,7 +43,7 @@ class Evaluator:
         # 设置CDF图的范围和分辨率
         min_error = 0.0
         max_error = 8.0
-        bin_width = 0.2
+        bin_width = 0.1
 
         # 创建直方图
         hist, bin_edges = np.histogram(errors, bins=np.arange(min_error, max_error + bin_width, bin_width), density=True)

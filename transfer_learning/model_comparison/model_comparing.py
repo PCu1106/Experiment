@@ -9,6 +9,8 @@ python .\model_comparing.py \
                              D:\Experiment\transfer_learning\DANN_CORR\220318_231116\0.1_10_0.9\predictions\231116 \
     --model4_prediction_list D:\Experiment\transfer_learning\DANN_CORR_AE\220318_231116\0.1_2_2_0.9\predictions\220318 \
                              D:\Experiment\transfer_learning\DANN_CORR_AE\220318_231116\0.1_2_2_0.9\predictions\231116 \
+    --model5_prediction_list D:\Experiment\transfer_learning\DNN_base\220318_231116\predictions\220318 \
+                             D:\Experiment\transfer_learning\DNN_base\220318_231116\predictions\231116 \
     --experiment_name time_variation
 Space Experiment:
 python .\model_comparing.py \
@@ -20,6 +22,8 @@ python .\model_comparing.py \
                              D:\Experiment\transfer_learning\DANN_CORR\231116_231117\0.1_10_0.9\predictions\231117 \
     --model4_prediction_list D:\Experiment\transfer_learning\DANN_CORR_AE\231116_231117\0.1_2_2_0.9\predictions\231116 \
                              D:\Experiment\transfer_learning\DANN_CORR_AE\231116_231117\0.1_2_2_0.9\predictions\231117 \
+    --model5_prediction_list D:\Experiment\transfer_learning\DNN_base\231116_231117\predictions\231116 \
+                             D:\Experiment\transfer_learning\DNN_base\231116_231117\predictions\231117 \
     --experiment_name spatail_variation
 '''
 
@@ -41,6 +45,7 @@ if __name__ == '__main__':
     parser.add_argument('--model2_prediction_list', nargs='+', type=str, required = True, help='List of model2 prediction paths')
     parser.add_argument('--model3_prediction_list', nargs='+', type=str, required = True, help='List of model3 prediction paths')
     parser.add_argument('--model4_prediction_list', nargs='+', type=str, required = True, help='List of model4 prediction paths')
+    parser.add_argument('--model5_prediction_list', nargs='+', type=str, required = True, help='List of model5 prediction paths')
     parser.add_argument('--experiment_name', type=str, default='', required = True, help='Would show on the pigure name')
 
 
@@ -51,6 +56,7 @@ if __name__ == '__main__':
     model2_mde, model2_error = [], []
     model3_mde, model3_error = [], []
     model4_mde, model4_error = [], []
+    model5_mde, model5_error = [], []
     for model1_prediction in args.model1_prediction_list:
         total_mde, total_errors = evaluator.calculate_mde(model1_prediction) # [scripted_walk mde, stationary mde, freewalk mde]
         model1_error.append(total_errors[1])
@@ -67,25 +73,19 @@ if __name__ == '__main__':
         total_mde, total_errors = evaluator.calculate_mde(model4_prediction)
         model4_mde.append(total_mde[1])
         model4_error.append(total_errors[1])
+    for model5_prediction in args.model5_prediction_list:
+        total_mde, total_errors = evaluator.calculate_mde(model5_prediction)
+        model5_mde.append(total_mde[1])
+        model5_error.append(total_errors[1])
 
-    # print(model1_error)
-    print(len(model1_error))
-    print(np.std(model1_error))
-    # print(model2_error)
-    print(len(model2_error))
-    print(np.std(model2_error))
-    # print(model3_error)
-    print(len(model3_error))
-    print(np.std(model3_error))
-    # print(model4_error)
-    print(len(model4_error))
-    print(np.std(model4_error))
-    color_list = ['red', 'black', 'purple', 'brown']
+    model_names = ['DANN', 'DANN_AE', 'DANN_CORR', 'DANN_CORR_AE', 'DNN']
+    color_list = ['red', 'black', 'purple', 'brown', 'gray']
     for i, domain in enumerate(['source domain', 'target domain']):
-        evaluator.plot_cdf(model1_error[i], 'DANN', color_list[0])
-        evaluator.plot_cdf(model2_error[i], 'DANN_AE', color_list[1])
-        evaluator.plot_cdf(model3_error[i], 'DANN_CORR', color_list[2])
-        evaluator.plot_cdf(model4_error[i], 'DANN_CORR_AE', color_list[3])
+        evaluator.plot_cdf(model1_error[i], model_names[0], color_list[0])
+        evaluator.plot_cdf(model2_error[i], model_names[1], color_list[1])
+        evaluator.plot_cdf(model3_error[i], model_names[2], color_list[2])
+        evaluator.plot_cdf(model4_error[i], model_names[3], color_list[3])
+        evaluator.plot_cdf(model5_error[i], model_names[4], color_list[4])
         plt.title(f'{args.experiment_name} {domain} CDF of Errors')
         plt.xlabel('Error')
         plt.ylabel('Cumulative Probability')
@@ -97,14 +97,14 @@ if __name__ == '__main__':
         color_list = [date2color['220318'], date2color['231116']]
     elif args.experiment_name == 'spatail_variation':
         color_list = [date2color['231116'], date2color['231117']]
-    model_names = ['DANN', 'DANN_AE', 'DANN_CORR', 'DANN_CORR_AE']
-    model_mde = [model1_mde, model2_mde, model3_mde, model4_mde]
+    model_mde = [model1_mde, model2_mde, model3_mde, model4_mde, model5_mde]
     bar_width = 0.35
 
     # 設定x軸的位置
     index = range(len(model_names))  # 每組 model 只有一個長條
 
     # 繪製長條圖
+    plt.figure(figsize=(8, 6))
     for i, model_name in enumerate(model_names):
         source_index = i
         target_index = i + bar_width
@@ -130,7 +130,7 @@ if __name__ == '__main__':
     plt.savefig(f"{args.experiment_name}_bar.png")
     plt.clf()
 
-    errors = [model1_error, model2_error, model3_error, model4_error]
+    errors = [model1_error, model2_error, model3_error, model4_error, model5_error]
     # 設定 source domain 和 target domain 的位置
     positions = np.array(range(len(model_names))) * 2.0  # 每隔2的位置
     # 將 source domain 跟 target domain 分別放入一個列表
@@ -142,11 +142,11 @@ if __name__ == '__main__':
     # 設定箱型圖的顏色
     boxprops = dict(linestyle='-', linewidth=2, color=color_list[0])
     # 繪製 source domain 的箱型圖
-    plt.boxplot(source_errors, positions=positions - 0.4, labels=model_names, widths=0.4, boxprops=boxprops, medianprops=medianprops)
+    plt.boxplot(source_errors, positions=positions - 0.3, labels=model_names, widths=0.3, boxprops=boxprops, medianprops=medianprops)
     # 繪製 target domain 的箱型圖
     # 設定箱型圖的顏色
     boxprops = dict(linestyle='-', linewidth=2, color=color_list[1])
-    plt.boxplot(target_errors, positions=positions + 0.4, labels=model_names, widths=0.4, boxprops=boxprops, medianprops=medianprops)
+    plt.boxplot(target_errors, positions=positions + 0.3, labels=model_names, widths=0.3, boxprops=boxprops, medianprops=medianprops)
 
     # 設定標題和標籤
     plt.xlabel('Models')
@@ -157,5 +157,5 @@ if __name__ == '__main__':
 
     plt.xticks(positions, model_names)
     # 顯示圖形
-    plt.savefig(f"{args.experiment_name} {domain}_box.png")
+    plt.savefig(f"{args.experiment_name}_box.png")
     plt.clf()
