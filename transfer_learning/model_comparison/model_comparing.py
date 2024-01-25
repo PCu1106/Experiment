@@ -1,25 +1,25 @@
 '''
 Time Experiment:
 python .\model_comparing.py \
-    --model1_prediction_list D:\Experiment\transfer_learning\DANN\220318_231116\12_0.0\predictions\220318 \
-                             D:\Experiment\transfer_learning\DANN\220318_231116\12_0.0\predictions\231116 \
-    --model2_prediction_list D:\Experiment\transfer_learning\DANN_AE\220318_231116\122_0.0\predictions\220318 \
-                             D:\Experiment\transfer_learning\DANN_AE\220318_231116\122_0.0\predictions\231116 \
-    --model3_prediction_list D:\Experiment\transfer_learning\DANN_CORR\220318_231116\0.1_10_0.0\predictions\220318 \
-                             D:\Experiment\transfer_learning\DANN_CORR\220318_231116\0.1_10_0.0\predictions\231116 \
-    --model4_prediction_list D:\Experiment\transfer_learning\DANN_CORR_AE\220318_231116\0.1_2_2_0.0\predictions\220318 \
-                             D:\Experiment\transfer_learning\DANN_CORR_AE\220318_231116\0.1_2_2_0.0\predictions\231116 \
+    --model1_prediction_list D:\Experiment\transfer_learning\DANN\220318_231116\12_0.9\predictions\220318 \
+                             D:\Experiment\transfer_learning\DANN\220318_231116\12_0.9\predictions\231116 \
+    --model2_prediction_list D:\Experiment\transfer_learning\DANN_AE\220318_231116\122_0.9\predictions\220318 \
+                             D:\Experiment\transfer_learning\DANN_AE\220318_231116\122_0.9\predictions\231116 \
+    --model3_prediction_list D:\Experiment\transfer_learning\DANN_CORR\220318_231116\0.1_10_0.9\predictions\220318 \
+                             D:\Experiment\transfer_learning\DANN_CORR\220318_231116\0.1_10_0.9\predictions\231116 \
+    --model4_prediction_list D:\Experiment\transfer_learning\DANN_CORR_AE\220318_231116\0.1_2_2_0.9\predictions\220318 \
+                             D:\Experiment\transfer_learning\DANN_CORR_AE\220318_231116\0.1_2_2_0.9\predictions\231116 \
     --experiment_name time_variation
 Space Experiment:
 python .\model_comparing.py \
-    --model1_prediction_list D:\Experiment\transfer_learning\DANN\231116_231117\12_0.0\predictions\231116 \
-                             D:\Experiment\transfer_learning\DANN\231116_231117\12_0.0\predictions\231117 \
-    --model2_prediction_list D:\Experiment\transfer_learning\DANN_AE\231116_231117\122_0.0\predictions\231116 \
-                             D:\Experiment\transfer_learning\DANN_AE\231116_231117\122_0.0\predictions\231117 \
-    --model3_prediction_list D:\Experiment\transfer_learning\DANN_CORR\231116_231117\0.1_10_0.0\predictions\231116 \
-                             D:\Experiment\transfer_learning\DANN_CORR\231116_231117\0.1_10_0.0\predictions\231117 \
-    --model4_prediction_list D:\Experiment\transfer_learning\DANN_CORR_AE\231116_231117\0.1_2_2_0.0\predictions\231116 \
-                             D:\Experiment\transfer_learning\DANN_CORR_AE\231116_231117\0.1_2_2_0.0\predictions\231117 \
+    --model1_prediction_list D:\Experiment\transfer_learning\DANN\231116_231117\12_0.9\predictions\231116 \
+                             D:\Experiment\transfer_learning\DANN\231116_231117\12_0.9\predictions\231117 \
+    --model2_prediction_list D:\Experiment\transfer_learning\DANN_AE\231116_231117\122_0.9\predictions\231116 \
+                             D:\Experiment\transfer_learning\DANN_AE\231116_231117\122_0.9\predictions\231117 \
+    --model3_prediction_list D:\Experiment\transfer_learning\DANN_CORR\231116_231117\0.1_10_0.9\predictions\231116 \
+                             D:\Experiment\transfer_learning\DANN_CORR\231116_231117\0.1_10_0.9\predictions\231117 \
+    --model4_prediction_list D:\Experiment\transfer_learning\DANN_CORR_AE\231116_231117\0.1_2_2_0.9\predictions\231116 \
+                             D:\Experiment\transfer_learning\DANN_CORR_AE\231116_231117\0.1_2_2_0.9\predictions\231117 \
     --experiment_name spatail_variation
 '''
 
@@ -28,6 +28,7 @@ import sys
 import argparse
 sys.path.append('..\\..\\model_comparison')
 from walk_definitions import walk_class
+from walk_definitions import date2color
 from evaluator import Evaluator
 import matplotlib.pyplot as plt
 
@@ -46,22 +47,26 @@ if __name__ == '__main__':
     # 解析命令行参数
     args = parser.parse_args()
     evaluator = Evaluator()
-    model1_error = []
-    model2_error = []
-    model3_error = []
-    model4_error = []
+    model1_mde, model1_error = [], []
+    model2_mde, model2_error = [], []
+    model3_mde, model3_error = [], []
+    model4_mde, model4_error = [], []
     for model1_prediction in args.model1_prediction_list:
-        total_mde, total_errors = evaluator.calculate_mde(model1_prediction)
-        model1_error.extend(total_errors[1])
+        total_mde, total_errors = evaluator.calculate_mde(model1_prediction) # [scripted_walk mde, stationary mde, freewalk mde]
+        model1_error.append(total_errors[1])
+        model1_mde.append(total_mde[1])
     for model2_prediction in args.model2_prediction_list:
         total_mde, total_errors = evaluator.calculate_mde(model2_prediction)
-        model2_error.extend(total_errors[1])
+        model2_error.append(total_errors[1])
+        model2_mde.append(total_mde[1])
     for model3_prediction in args.model3_prediction_list:
         total_mde, total_errors = evaluator.calculate_mde(model3_prediction)
-        model3_error.extend(total_errors[1])
+        model3_error.append(total_errors[1])
+        model3_mde.append(total_mde[1])
     for model4_prediction in args.model4_prediction_list:
         total_mde, total_errors = evaluator.calculate_mde(model4_prediction)
-        model4_error.extend(total_errors[1])
+        model4_mde.append(total_mde[1])
+        model4_error.append(total_errors[1])
 
     # print(model1_error)
     print(len(model1_error))
@@ -76,13 +81,67 @@ if __name__ == '__main__':
     print(len(model4_error))
     print(np.std(model4_error))
     color_list = ['red', 'black', 'purple', 'brown']
-    evaluator.plot_cdf(model1_error, 'DANN', color_list[0])
-    evaluator.plot_cdf(model2_error, 'DANN_AE', color_list[1])
-    evaluator.plot_cdf(model3_error, 'DANN_CORR', color_list[2])
-    evaluator.plot_cdf(model4_error, 'DANN_CORR_AE', color_list[3])
-    plt.title(f'{args.experiment_name} CDF of Errors')
-    plt.xlabel('Error')
-    plt.ylabel('Cumulative Probability')
-    plt.legend()
-    plt.savefig(f"{args.experiment_name}_CDF.png")
+    for i, domain in enumerate(['source domain', 'target domain']):
+        evaluator.plot_cdf(model1_error[i], 'DANN', color_list[0])
+        evaluator.plot_cdf(model2_error[i], 'DANN_AE', color_list[1])
+        evaluator.plot_cdf(model3_error[i], 'DANN_CORR', color_list[2])
+        evaluator.plot_cdf(model4_error[i], 'DANN_CORR_AE', color_list[3])
+        plt.title(f'{args.experiment_name} {domain} CDF of Errors')
+        plt.xlabel('Error')
+        plt.ylabel('Cumulative Probability')
+        plt.legend()
+        plt.savefig(f"{args.experiment_name} {domain}_CDF.png")
+        plt.clf()
+
+    if args.experiment_name == 'time_variation':
+        color_list = [date2color['220318'], date2color['231116']]
+    elif args.experiment_name == 'spatail_variation':
+        color_list = [date2color['231116'], date2color['231117']]
+    model_names = ['DANN', 'DANN_AE', 'DANN_CORR', 'DANN_CORR_AE']
+    model_mde = [model1_mde, model2_mde, model3_mde, model4_mde]
+    bar_width = 0.35
+
+    # 設定x軸的位置
+    index = range(len(model_names))  # 每組 model 只有一個長條
+
+    # 繪製長條圖
+    for i, model_name in enumerate(model_names):
+        source_index = i
+        target_index = i + bar_width
+        plt.bar(source_index, model_mde[i][0], width=bar_width, label=f"{model_name}_source", color=color_list[0])
+        plt.bar(target_index, model_mde[i][1], width=bar_width, label=f"{model_name}_target", color=color_list[1])
+        # 在長條頂部顯示數字
+        plt.text(source_index, model_mde[i][0], f'{model_mde[i][0]:.2f}', ha='center', va='bottom', color='black')
+        plt.text(target_index, model_mde[i][1], f'{model_mde[i][1]:.2f}', ha='center', va='bottom', color='black')
+
+
+    # 設定x軸標籤
+    plt.xlabel('Models')
+    # 設定y軸標籤
+    plt.ylabel('MDE')
+    # 设置Y轴范围
+    plt.ylim(0, 2)
+    # 添加單一的 Source Domain 和 Target Domain 圖例
+    plt.legend(['Source Domain', 'Target Domain'])
+    # 設定x軸刻度
+    plt.xticks([i + bar_width/2 for i in index], model_names)
+    plt.title(f'{args.experiment_name} MDE')
+
+    plt.savefig(f"{args.experiment_name}_bar.png")
     plt.clf()
+
+    # 繪製箱型圖
+    domain_error = list(zip(model1_error, model2_error, model3_error, model4_error))
+    for i, domain in enumerate(['source domain', 'target domain']):
+        plt.boxplot(domain_error[i], labels=model_names)
+        # 設定標題和標籤
+        plt.title(f'Comparison of {domain} Model Errors')
+        plt.xlabel('Models')
+        plt.ylabel('Error')
+        # 设置Y轴范围
+        plt.ylim(0, 5)
+
+        plt.title(f'{args.experiment_name} {domain} Box of Errors')
+        # 顯示圖形
+        plt.savefig(f"{args.experiment_name} {domain}_box.png")
+        plt.clf()

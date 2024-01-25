@@ -261,4 +261,4 @@ if __name__ == "__main__":
         os.chdir('..\\..')
 
     if args.testing_data_list:
-        plot_lines(data_drop_out_list, domain2_result, domain_name='231116', output_path=args.work_dir, title='Source_domain_to_Target_domain')
+        plot_lines(data_drop_out_list, domain3_result, domain_name='231117', output_path=args.work_dir, title='Source_domain_to_Target_domain')
