@@ -53,6 +53,38 @@ class DNN:
         self.X = np.array(X)[indices]
         self.y = one_hot_y[indices]
 
+    def load_two_data(self, source_domain_file, target_domain_file, shuffle = True, data_drop_out = None):
+        # Read source domain data
+        source_domain = pd.read_csv(source_domain_file)
+        self.source_domain_data = source_domain.iloc[:, 1:]
+        source_domain_labels = source_domain['label']
+        source_domain_labels = source_domain_labels - 1
+        self.source_domain_labels = to_categorical(source_domain_labels, num_classes=self.output_size)
+
+        # Read target domain data
+        target_domain = pd.read_csv(target_domain_file)
+        self.target_domain_data = target_domain.iloc[:, 1:]
+        target_domain_labels = target_domain['label']
+        target_domain_labels = target_domain_labels - 1
+        self.target_domain_labels = to_categorical(target_domain_labels, num_classes=self.output_size)
+
+        if data_drop_out is not None:
+            drop_indices = np.random.choice(len(self.target_domain_data), int(len(self.target_domain_data) * data_drop_out), replace=False)
+            self.target_domain_data = np.delete(self.target_domain_data, drop_indices, axis=0)
+            self.target_domain_labels = np.delete(self.target_domain_labels, drop_indices, axis=0)
+
+        # Combine source and target domain data and labels
+        combined_data = np.vstack([self.source_domain_data, self.target_domain_data])
+        combined_labels = np.vstack([self.source_domain_labels, self.target_domain_labels])
+
+        if shuffle:
+            # Shuffle the data
+            indices = np.arange(len(combined_data))
+            np.random.shuffle(indices)
+            combined_data = combined_data[indices]
+            combined_labels = combined_labels[indices]
+        self.X = combined_data
+        self.y = combined_labels
 
     def build_model(self):
         model = tf.keras.Sequential()

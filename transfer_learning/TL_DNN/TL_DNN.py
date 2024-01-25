@@ -15,7 +15,7 @@ python .\TL_DNN.py \
 
 import sys
 sys.path.append('..\\..\\model_comparison')
-from DNN import DNN
+from transfer_learning.DNN import DNN_base
 from walk_definitions import walk_class
 from evaluator import Evaluator
 import pandas as pd
@@ -68,7 +68,7 @@ if __name__ == '__main__':
 
     freeze_layers = range(0, 5)
     for freeze_layer in freeze_layers:
-        dnn_model = DNN(work_dir=f'{args.work_dir}\\TL_DNN_{freeze_layer}')
+        dnn_model = DNN_base(work_dir=f'{args.work_dir}\\TL_DNN_{freeze_layer}')
         if args.training_data:
             dnn_model.load_model(base_model_path)
             dnn_model.build_transfer_model(freeze_layers = freeze_layer)
