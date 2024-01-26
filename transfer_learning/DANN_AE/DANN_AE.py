@@ -168,6 +168,10 @@ class AutoencoderDANNModel(DANNModel):
         plt.tight_layout()
         plt.savefig('loss_and_accuracy.png')
 
+    def extract_features(self, input_data):
+        # Create a model with the feature extractor only
+        feature_extractor_model = models.Model(inputs=self.model.input, outputs=self.model.get_layer('encoder_ouput').output)
+        return feature_extractor_model.predict(input_data)
     
 if __name__ == "__main__":
     # 使用 argparse 處理命令列參數

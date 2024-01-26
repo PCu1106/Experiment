@@ -24,7 +24,7 @@ python .\model_comparing.py \
                              D:\Experiment\transfer_learning\DANN_CORR_AE\231116_231117\0.1_2_2_0.9\predictions\231117 \
     --model5_prediction_list D:\Experiment\transfer_learning\DNN_base\231116_231117\predictions\231116 \
                              D:\Experiment\transfer_learning\DNN_base\231116_231117\predictions\231117 \
-    --experiment_name spatail_variation
+    --experiment_name spatial_variation
 '''
 
 import numpy as np
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     model_names = np.array(model_names)[choosen_index]
     color_list = np.array(color_list)[choosen_index]
 
-    
+
     for i, domain in enumerate(['source domain', 'target domain']):
         for j in range(len(model_errors)):
             evaluator.plot_cdf(model_errors[j][i], model_names[j], color_list[j])
@@ -103,7 +103,7 @@ if __name__ == '__main__':
 
     if args.experiment_name == 'time_variation':
         color_list = [date2color['220318'], date2color['231116']]
-    elif args.experiment_name == 'spatail_variation':
+    elif args.experiment_name == 'spatial_variation':
         color_list = [date2color['231116'], date2color['231117']]
     bar_width = 0.35
 

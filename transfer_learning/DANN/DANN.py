@@ -281,6 +281,10 @@ class DANNModel:
 
         return fine_tune_history
     
+    def extract_features(self, input_data):
+        # Create a model with the feature extractor only
+        feature_extractor_model = models.Model(inputs=self.model.input, outputs=self.model.get_layer('feature_extractor_2').output)
+        return feature_extractor_model.predict(input_data)
 
 if __name__ == "__main__":
     # 使用 argparse 處理命令列參數
