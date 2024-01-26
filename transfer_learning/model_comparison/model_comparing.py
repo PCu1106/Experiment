@@ -78,14 +78,22 @@ if __name__ == '__main__':
         model5_mde.append(total_mde[1])
         model5_error.append(total_errors[1])
 
+    # modify choosen_index to choose which model to show
+    choosen_index = [4, 0, 1, 2]
+
+    model_errors = [model1_error, model2_error, model3_error, model4_error, model5_error]
+    model_mde = [model1_mde, model2_mde, model3_mde, model4_mde, model5_mde]
     model_names = ['DANN', 'DANN_AE', 'DANN_CORR', 'DANN_CORR_AE', 'DNN']
     color_list = ['red', 'black', 'purple', 'brown', 'gray']
+    model_errors = np.array(model_errors)[choosen_index]
+    model_mde = np.array(model_mde)[choosen_index]
+    model_names = np.array(model_names)[choosen_index]
+    color_list = np.array(color_list)[choosen_index]
+
+    
     for i, domain in enumerate(['source domain', 'target domain']):
-        evaluator.plot_cdf(model1_error[i], model_names[0], color_list[0])
-        evaluator.plot_cdf(model2_error[i], model_names[1], color_list[1])
-        evaluator.plot_cdf(model3_error[i], model_names[2], color_list[2])
-        evaluator.plot_cdf(model4_error[i], model_names[3], color_list[3])
-        evaluator.plot_cdf(model5_error[i], model_names[4], color_list[4])
+        for j in range(len(model_errors)):
+            evaluator.plot_cdf(model_errors[j][i], model_names[j], color_list[j])
         plt.title(f'{args.experiment_name} {domain} CDF of Errors')
         plt.xlabel('Error')
         plt.ylabel('Cumulative Probability')
@@ -97,7 +105,6 @@ if __name__ == '__main__':
         color_list = [date2color['220318'], date2color['231116']]
     elif args.experiment_name == 'spatail_variation':
         color_list = [date2color['231116'], date2color['231117']]
-    model_mde = [model1_mde, model2_mde, model3_mde, model4_mde, model5_mde]
     bar_width = 0.35
 
     # 設定x軸的位置
@@ -130,12 +137,11 @@ if __name__ == '__main__':
     plt.savefig(f"{args.experiment_name}_bar.png")
     plt.clf()
 
-    errors = [model1_error, model2_error, model3_error, model4_error, model5_error]
     # 設定 source domain 和 target domain 的位置
     positions = np.array(range(len(model_names))) * 2.0  # 每隔2的位置
     # 將 source domain 跟 target domain 分別放入一個列表
-    source_errors = [error[0] for error in errors]
-    target_errors = [error[1] for error in errors] 
+    source_errors = [error[0] for error in model_errors]
+    target_errors = [error[1] for error in model_errors] 
 
     # 設定中位數線的顏色
     medianprops = dict(linestyle='-', linewidth=2, color='red')
