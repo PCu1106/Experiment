@@ -114,6 +114,94 @@ class AutoencoderDANNModel(DANNModel):
 
         return history
     
+    def train_step_1(self, model_path, batch_size=32, epochs=50):
+        # Compile the model for step 1
+        self.model.compile(
+            optimizer='adam',
+            loss={
+                'label_predictor_output': 'categorical_crossentropy',
+                'domain_classifier_output': 'binary_crossentropy',
+                'decoder_output': 'mse'  # Reconstruction loss
+            },
+            loss_weights={
+                'label_predictor_output': 0.0,
+                'domain_classifier_output': 0.5,
+                'decoder_output': 0.5  # Adjust the weight for the reconstruction loss
+            },
+            metrics={
+                'label_predictor_output': 'accuracy',
+                'domain_classifier_output': 'accuracy'
+            }
+        )
+
+        # Define the ModelCheckpoint callback to save the model with the minimum domain classifier loss
+        checkpoint = ModelCheckpoint(model_path, monitor='val_loss', save_best_only=True, mode='min', verbose=1)
+
+        # Train the model for step 1 with source domain labeled data and target domain unlabeled data
+        history = self.model.fit(
+            self.X,
+            {
+                'label_predictor_output': self.yl,
+                'domain_classifier_output': self.yd,
+                'decoder_output': self.X  # Use the input data as target for reconstruction loss
+            },
+            batch_size=batch_size,
+            epochs=epochs,
+            validation_split=0.2,
+            callbacks=[checkpoint]
+        )
+
+        # Plot training history
+        self.plot_training_history(history, model_path)
+
+        return history
+    
+    def train_step_2(self, model_path, batch_size=32, epochs=50):
+        # Compile the model for step 2
+        self.model.compile(
+            optimizer='adam',
+            loss={
+                'label_predictor_output': 'categorical_crossentropy',
+                'domain_classifier_output': 'binary_crossentropy',
+                'decoder_output': 'mse'  # Reconstruction loss
+            },
+            loss_weights={
+                'label_predictor_output': 1.0,
+                'domain_classifier_output': 0.0,
+                'decoder_output': 0.0  # Adjust the weight for the reconstruction loss
+            },
+            metrics={
+                'label_predictor_output': 'accuracy',
+                'domain_classifier_output': 'accuracy'
+            }
+        )
+        # Define the ModelCheckpoint callback to save the model with the minimum label predictor loss
+        checkpoint = ModelCheckpoint(model_path, monitor='val_loss', save_best_only=True, mode='min', verbose=1)
+
+        # Freeze the weights of feature_extractor and domain_classifier
+        for layer in self.model.layers:
+            if layer.name.startswith('feature_extractor') or layer.name.startswith('encoder') or layer.name.startswith('decoder'):
+                layer.trainable = False
+
+        # Train the model for step 2 with source domain labeled data
+        history = self.model.fit(
+            self.X,
+            {
+                'label_predictor_output': self.yl,
+                'domain_classifier_output': self.yd,
+                'decoder_output': self.X  # Use the input data as target for reconstruction loss
+            },
+            batch_size=batch_size,
+            epochs=epochs,
+            validation_split=0.2,
+            callbacks=[checkpoint]
+        )
+
+        # Plot training history
+        self.plot_training_history(history, model_path)
+
+        return history
+
     def plot_training_history(self, history, model_path):
         # Plot training and validation loss for Label Predictor
         plt.figure(figsize=(16, 12))
