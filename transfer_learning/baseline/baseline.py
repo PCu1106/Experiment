@@ -36,6 +36,10 @@ from walk_definitions import walk_class
 from evaluator import Evaluator
 sys.path.append('..')
 from drop_out_plot import plot_lines
+from sklearn.linear_model import PassiveAggressiveClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
+from scikeras.wrappers import KerasClassifier
 
 
 
@@ -83,9 +87,23 @@ class BaselineDANNModel(DANNModel):
         return autoencoder, encoded
 
     def build_label_predictor(self, feature_extractor):
-        # Label predictor layers
-        x = layers.Dense(32, activation='relu', name='label_predictor_1')(feature_extractor)
-        label_predictor_output = layers.Dense(self.num_classes, activation='softmax', name='label_predictor_output')(x)
+        # Feature scaling using StandardScaler
+        scaler = StandardScaler()
+
+        # Passive Aggressive Classifier
+        pa_classifier = PassiveAggressiveClassifier()
+
+        # Create a pipeline with feature scaling and PA classifier
+        pa_pipeline = make_pipeline(scaler, pa_classifier)
+
+        # Wrap the scikit-learn model as a Keras layer
+        pa_layer = KerasClassifier(pa_pipeline, name='pa_classifier')
+
+        # Label predictor layers using Functional API
+        x = feature_extractor
+        x = layers.Dense(32, activation='relu', name='label_predictor_1')(x)
+        x = pa_layer(x)
+        label_predictor_output = layers.Activation('softmax', name='label_predictor_output')(x)
 
         return label_predictor_output
     
