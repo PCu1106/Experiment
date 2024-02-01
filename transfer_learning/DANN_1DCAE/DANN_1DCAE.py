@@ -3,13 +3,13 @@ python .\DANN_1DCAE.py \
     --training_source_domain_data D:\Experiment\data\220318\GalaxyA51\wireless_training.csv \
     --training_target_domain_data D:\Experiment\data\231116\GalaxyA51\wireless_training.csv \
     --model_path 220318_231116.pth \
-    --work_dir 220318_231116\0.1_10
+    --work_dir 220318_231116\0.1_0.1_10
 python .\DANN_1DCAE.py \
     --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes \
                         D:\Experiment\data\220318\GalaxyA51\routes \
                         D:\Experiment\data\231117\GalaxyA51\routes \
     --model_path 220318_231116.pth \
-    --work_dir 220318_231116\0.1_10
+    --work_dir 220318_231116\0.1_0.1_10
 python ..\..\model_comparison\evaluator.py \
     --model_name DANN_CORR \
     --directory 220318_231116\0.1_10_0.0 \
@@ -23,6 +23,7 @@ from DANN_pytorch import DANN, GRL
 import torch.nn.functional as F
 import torch
 import torch.nn as nn
+import torch.optim as optim
 from torchsummary import summary
 from itertools import cycle
 import math
@@ -36,6 +37,7 @@ from walk_definitions import walk_class
 from evaluator import Evaluator
 sys.path.append('..\\model_comparison')
 from drop_out_plot import plot_lines
+import copy
 
 
 class CAEFeatureExtractor(nn.Module):
@@ -73,6 +75,14 @@ class DANNWithCAE(DANN):
 
         # Replace the FeatureExtractor with CAEFeatureExtractor
         self.feature_extractor = CAEFeatureExtractor()
+
+        # Modify optimizer initialization to include all parameters
+        self.optimizer = optim.Adam(
+            list(self.feature_extractor.parameters()) +
+            list(self.class_classifier.parameters()) +
+            list(self.domain_classifier.parameters()),
+            lr=0.001
+        )
 
     def _initialize_metrics(self):
         self.total_losses, self.label_losses, self.domain_losses, self.reconstruction_losses = [], [], [], []
@@ -123,9 +133,7 @@ class DANNWithCAE(DANN):
                 self.val_total_domain_accuracies.append(val_acc_list[3])
                 self.val_source_domain_accuracies.append(val_acc_list[4])
                 self.val_target_domain_accuracies.append(val_acc_list[5])
-                # print(f'Validation Epoch [{epoch+1}/{num_epochs}], Total Loss: {val_total_loss}, Label Loss: {val_label_loss}, Domain Loss: {val_domain_loss}, Source Accuracy: {val_source_accuracy}, Target Accuracy: {val_target_accuracy}')
             
-            # print(f'Epoch [{epoch+1}/{num_epochs}], Total Loss: {total_loss}, Label Loss: {label_loss}, Domain Loss: {domain_loss}, Source Accuracy: {source_accuracy}, Target Accuracy: {target_accuracy}')
             print(f'Epoch [{epoch+1}/{self.epochs}], loss: {self.total_losses[-1]:.4f}, label loss: {self.label_losses[-1]:.4f}, domain loss: {self.domain_losses[-1]:.4f}, reconstruction loss: {self.reconstruction_losses[-1]:.4f}, acc: {self.total_accuracies[-1]:.4f},\nval_loss: {self.val_total_losses[-1]:.4f}, val_label loss: {self.val_label_losses[-1]:.4f}, val_domain loss: {self.val_domain_losses[-1]:.4f}, val_reconstruction loss: {self.val_reconstruction_losses[-1]:.4f}, val_acc: {self.val_total_accuracies[-1]:.4f}')
             
             # Check if the current total loss is the best so far
@@ -273,6 +281,24 @@ class DANNWithCAE(DANN):
         plt.tight_layout()  # Adjust layout for better spacing
         plt.savefig('loss_and_accuracy.png')
 
+    def generate_predictions(self, model_path):
+        self.load_model(model_path)
+        prediction_results = {
+            'label': [],
+            'pred': []
+        }
+        # 進行預測
+        with torch.no_grad():
+            for test_batch, true_label_batch in self.test_loader:
+                labels_pred, domain_output, decoded = self.forward(test_batch)
+                _, preds = torch.max(labels_pred, 1)
+                predicted_labels = preds + 1  # 加 1 是为了将索引转换为 1 到 41 的标签
+                label = true_label_batch + 1
+                # 將預測結果保存到 prediction_results 中
+                prediction_results['label'].extend(label.tolist())
+                prediction_results['pred'].extend(predicted_labels.tolist())
+        return pd.DataFrame(prediction_results)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train DANN Model')
     parser.add_argument('--training_source_domain_data', type=str, help='Path to the source domain data file')
@@ -283,15 +309,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     num_classes = 41
-    epochs = 10
-    loss_weights = [1, 1, 10]
-    unlabeled = False
+    epochs = 500
+    loss_weights = [0.1, 0.1, 10]
+    unlabeled = True
     
     domain1_result = []
     domain2_result = []
     domain3_result = []
 
-    data_drop_out_list = np.arange(0.0, 0.05, 0.1)
+    data_drop_out_list = np.arange(0.9, 0.95, 0.1)
     
     for data_drop_out in data_drop_out_list:
         # 創建 DANNModel    
