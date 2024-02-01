@@ -103,6 +103,7 @@ class DANN(nn.Module):
             os.makedirs(work_dir)
         os.chdir(work_dir)
         self.feature_extractor = FeatureExtractor()
+        self.num_classes = num_classes
         self.class_classifier = ClassClassifier(num_classes)
         self.domain_classifier = DomainClassifier()
         self.batch_size = 32
