@@ -46,10 +46,7 @@ class PassiveAggressiveModule(nn.Module):
     def __init__(self):
         super(PassiveAggressiveModule, self).__init__()
         self.model = PassiveAggressiveClassifier()
-        # Create a dummy dataset with two classes
-        dummy_X, dummy_y = np.zeros((41, 16)), np.arange(41)
-        # Fit the model during initialization
-        self.fit(dummy_X, dummy_y)
+        self.is_fitted = False
 
     def forward(self, x):
         # You can define the forward behavior if needed
@@ -61,8 +58,11 @@ class PassiveAggressiveModule(nn.Module):
         self.is_fitted = True
 
     def partial_fit(self, X, y, classes=None):
-        # Perform partial fit
+        # if self.is_fitted:
+            # Perform partial fit
         self.model.partial_fit(X, y, classes=classes)
+        # else:
+        #     self.fit(X, y)
 
     def predict(self, x):
         # Add a predict method using the underlying scikit-learn model
@@ -92,13 +92,13 @@ class DANNWithCAEAndPA(DANNWithCAE):
         domain_features = GRL.apply(encoded, alpha)
         domain_output = self.domain_classifier(domain_features)
 
-        # Class prediction using PassiveAggressiveClassifier
-        class_labels = torch.tensor(self.class_classifier.predict(encoded.detach().numpy()))
+        # # Class prediction using PassiveAggressiveClassifier
+        # class_labels = torch.tensor(self.class_classifier.predict(encoded.detach().numpy()))
         
-        # Convert class labels to one-hot encoding
-        class_one_hot = F.one_hot(class_labels.long(), num_classes=self.num_classes).float()
+        # # Convert class labels to one-hot encoding
+        # class_one_hot = F.one_hot(class_labels.long(), num_classes=self.num_classes).float()
 
-        return class_one_hot, domain_output, encoded, decoded
+        return domain_output, encoded, decoded
 
     def train(self, unlabeled=False):
         for epoch in range(self.epochs):
@@ -159,16 +159,31 @@ class DANNWithCAEAndPA(DANNWithCAE):
             target_features, target_labels = next(target_iter)
             
             # Forward pass
-            source_labels_pred, source_domain_output, source_encoded, source_decoded = self.forward(source_features, self.alpha)
-            target_labels_pred, target_domain_output, target_encoded, target_decoded = self.forward(target_features, self.alpha)
+            source_domain_output, source_encoded, source_decoded = self.forward(source_features, self.alpha)
+            target_domain_output, target_encoded, target_decoded = self.forward(target_features, self.alpha)
 
             # Reconstruction loss
             reconstruction_loss_source = F.mse_loss(source_decoded, source_features)
             reconstruction_loss_target = F.mse_loss(target_decoded, target_features)
             reconstruction_loss = (reconstruction_loss_source + reconstruction_loss_target) / 2
 
-            print(source_labels_pred.dtype)
-            print(source_labels.dtype)
+            # Convert PyTorch tensors to NumPy arrays for sklearn
+            source_np_encoded = source_encoded.detach().numpy()
+            source_np_labels = source_labels.numpy()
+            target_np_encoded = target_encoded.detach().numpy()
+            target_np_labels = target_labels.numpy()
+            # Fit PassiveAggressiveClassifier
+            self.class_classifier.partial_fit(source_np_encoded, source_np_labels, np.arange(41))
+            self.class_classifier.partial_fit(target_np_encoded, target_np_labels, np.arange(41))
+
+            # Class prediction using PassiveAggressiveClassifier
+            source_labels_pred = torch.tensor(self.class_classifier.predict(source_np_encoded))
+            target_labels_pred = torch.tensor(self.class_classifier.predict(target_np_encoded))
+            
+            # Convert class labels to one-hot encoding
+            source_labels_pred = F.one_hot(source_labels_pred.long(), num_classes=self.num_classes).float()
+            target_labels_pred = F.one_hot(target_labels_pred.long(), num_classes=self.num_classes).float()
+
             label_loss_source = nn.CrossEntropyLoss()(source_labels_pred, source_labels)
             label_loss_target = nn.CrossEntropyLoss()(target_labels_pred, target_labels)
             if unlabeled:
@@ -187,15 +202,7 @@ class DANNWithCAEAndPA(DANNWithCAE):
                 total_loss.backward()
                 self.optimizer.step()
 
-                # Convert PyTorch tensors to NumPy arrays for sklearn
-                source_np_encoded = source_encoded.detach().numpy()
-                source_np_labels = source_labels.numpy()
-                target_np_encoded = target_encoded.detach().numpy()
-                target_np_labels = target_labels.numpy()
-
-                # Fit PassiveAggressiveClassifier
-                self.class_classifier.partial_fit(source_np_encoded, source_np_labels, classes=np.unique(source_np_labels))
-                self.class_classifier.partial_fit(target_np_encoded, target_np_labels, classes=np.unique(target_np_labels))
+                
 
             _, source_preds = torch.max(source_labels_pred, 1)
             source_correct_predictions += (source_preds == source_labels).sum().item()
