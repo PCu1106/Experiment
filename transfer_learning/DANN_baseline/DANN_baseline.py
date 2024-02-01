@@ -4,7 +4,7 @@ python .\DANN_baseline.py \
     --training_target_domain_data D:\Experiment\data\231116\GalaxyA51\wireless_training.csv \
     --model_path 220318_231116.pth \
     --work_dir 220318_231116\0.1_0.1_10
-python .\DANN_1DCAE.py \
+python .\DANN_baseline.py \
     --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes \
                         D:\Experiment\data\220318\GalaxyA51\routes \
                         D:\Experiment\data\231117\GalaxyA51\routes \
@@ -35,6 +35,7 @@ import math
 import pandas as pd
 import argparse
 import numpy as np
+import joblib
 sys.path.append('..\\..\\model_comparison')
 from walk_definitions import walk_class
 from evaluator import Evaluator
@@ -58,15 +59,25 @@ class PassiveAggressiveModule(nn.Module):
         self.is_fitted = True
 
     def partial_fit(self, X, y, classes=None):
-        # if self.is_fitted:
-            # Perform partial fit
         self.model.partial_fit(X, y, classes=classes)
-        # else:
-        #     self.fit(X, y)
+        self.is_fitted = True
 
     def predict(self, x):
         # Add a predict method using the underlying scikit-learn model
         return self.model.predict(x)
+    
+    def save_model(self, model_path):
+        if self.is_fitted:
+            joblib.dump(self.model, model_path)
+        else:
+            print("Error: Model is not fitted yet. Call 'fit' with appropriate arguments before saving.")
+
+    def load_model(self, model_path):
+        if os.path.exists(model_path):
+            self.model = joblib.load(model_path)
+            self.is_fitted = True
+        else:
+            print(f"Error: Model file not found at {model_path}")
 
 class DANNWithCAEAndPA(DANNWithCAE):
     def __init__(self, num_classes, epochs, model_save_path='saved_model.pth', loss_weights=None, work_dir=None):
@@ -85,20 +96,21 @@ class DANNWithCAEAndPA(DANNWithCAE):
     def _initialize_metrics(self):
         super()._initialize_metrics()  # Call the base class method
 
-    def forward(self, x, alpha=1.0):
+    def forward(self, x, alpha=1.0, test=False):
         encoded, decoded = self.feature_extractor(x)
 
         # Domain classification loss
         domain_features = GRL.apply(encoded, alpha)
         domain_output = self.domain_classifier(domain_features)
 
-        # # Class prediction using PassiveAggressiveClassifier
-        # class_labels = torch.tensor(self.class_classifier.predict(encoded.detach().numpy()))
-        
-        # # Convert class labels to one-hot encoding
-        # class_one_hot = F.one_hot(class_labels.long(), num_classes=self.num_classes).float()
+        class_one_hot = None
+        if test:
+            # Class prediction using PassiveAggressiveClassifier
+            class_labels = torch.tensor(self.class_classifier.predict(encoded.detach().numpy()))
+            # Convert class labels to one-hot encoding
+            class_one_hot = F.one_hot(class_labels.long(), num_classes=self.num_classes).float()
 
-        return domain_output, encoded, decoded
+        return class_one_hot, domain_output, encoded, decoded
 
     def train(self, unlabeled=False):
         for epoch in range(self.epochs):
@@ -137,6 +149,7 @@ class DANNWithCAEAndPA(DANNWithCAE):
                 # Save the model parameters
                 print(f'val_total_loss: {self.val_total_losses[-1]:.4f} < best_val_total_loss: {self.best_val_total_loss:.4f}', end=', ')
                 self.save_model()
+                self.class_classifier.save_model(f'{self.model_save_path}_PA')
                 self.best_val_total_loss = self.val_total_losses[-1]
 
             # Update the learning rate scheduler
@@ -159,8 +172,8 @@ class DANNWithCAEAndPA(DANNWithCAE):
             target_features, target_labels = next(target_iter)
             
             # Forward pass
-            source_domain_output, source_encoded, source_decoded = self.forward(source_features, self.alpha)
-            target_domain_output, target_encoded, target_decoded = self.forward(target_features, self.alpha)
+            _, source_domain_output, source_encoded, source_decoded = self.forward(source_features, self.alpha)
+            _, target_domain_output, target_encoded, target_decoded = self.forward(target_features, self.alpha)
 
             # Reconstruction loss
             reconstruction_loss_source = F.mse_loss(source_decoded, source_features)
@@ -173,8 +186,9 @@ class DANNWithCAEAndPA(DANNWithCAE):
             target_np_encoded = target_encoded.detach().numpy()
             target_np_labels = target_labels.numpy()
             # Fit PassiveAggressiveClassifier
-            self.class_classifier.partial_fit(source_np_encoded, source_np_labels, np.arange(41))
-            self.class_classifier.partial_fit(target_np_encoded, target_np_labels, np.arange(41))
+            if training:
+                self.class_classifier.partial_fit(source_np_encoded, source_np_labels, np.arange(41))
+                self.class_classifier.partial_fit(target_np_encoded, target_np_labels, np.arange(41))
 
             # Class prediction using PassiveAggressiveClassifier
             source_labels_pred = torch.tensor(self.class_classifier.predict(source_np_encoded))
@@ -235,6 +249,30 @@ class DANNWithCAEAndPA(DANNWithCAE):
             ]
         return loss_list, acc_list
     
+    def generate_predictions(self, model_path):
+        self.load_model(model_path)
+        prediction_results = {
+            'label': [],
+            'pred': []
+        }
+        # 進行預測
+        with torch.no_grad():
+            for test_batch, true_label_batch in self.test_loader:
+                labels_pred, domain_output, encoded, decoded = self.forward(test_batch, test=True)
+                _, preds = torch.max(labels_pred, 1)
+                predicted_labels = preds + 1  # 加 1 是为了将索引转换为 1 到 41 的标签
+                label = true_label_batch + 1
+                # 將預測結果保存到 prediction_results 中
+                prediction_results['label'].extend(label.tolist())
+                prediction_results['pred'].extend(predicted_labels.tolist())
+        return pd.DataFrame(prediction_results)
+    
+    def load_model(self, model_path):
+        if os.path.exists(model_path):
+            self.load_state_dict(torch.load(model_path))
+            self.class_classifier.load_model(f'{model_path}_PA')
+        else:
+            print(f"Error: Model file not found at {model_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train DANN Model')
@@ -246,7 +284,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     num_classes = 41
-    epochs = 5
+    epochs = 500
     loss_weights = [0.1, 0.1, 10]
     unlabeled = True
     
