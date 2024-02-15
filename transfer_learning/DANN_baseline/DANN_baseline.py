@@ -1,15 +1,15 @@
 '''
-python .\DANN_baseline.py \
-    --training_source_domain_data D:\Experiment\data\220318\GalaxyA51\wireless_training.csv \
-    --training_target_domain_data D:\Experiment\data\231116\GalaxyA51\wireless_training.csv \
-    --model_path 220318_231116.pth \
-    --work_dir 220318_231116\0.1_0.1_10
-python .\DANN_baseline.py \
-    --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes \
-                        D:\Experiment\data\220318\GalaxyA51\routes \
-                        D:\Experiment\data\231117\GalaxyA51\routes \
-    --model_path 220318_231116.pth \
-    --work_dir 220318_231116\0.1_0.1_10
+python .\DANN_baseline.py ^
+    --training_source_domain_data D:\Experiment\data\220318\GalaxyA51\wireless_training.csv ^
+    --training_target_domain_data D:\Experiment\data\231116\GalaxyA51\wireless_training.csv ^
+    --model_path 220318_231116.pth ^
+    --work_dir unlabeled\220318_231116\0.1_0.1_10
+python .\DANN_baseline.py ^
+    --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes ^
+                        D:\Experiment\data\220318\GalaxyA51\routes ^
+                        D:\Experiment\data\231117\GalaxyA51\routes ^
+    --model_path 220318_231116.pth ^
+    --work_dir unlabeled\220318_231116\0.1_0.1_10
 python ..\..\model_comparison\evaluator.py \
     --model_name DANN_CORR \
     --directory 220318_231116\0.1_10_0.0 \
@@ -188,7 +188,8 @@ class DANNWithCAEAndPA(DANNWithCAE):
             # Fit PassiveAggressiveClassifier
             if training:
                 self.class_classifier.partial_fit(source_np_encoded, source_np_labels, np.arange(41))
-                self.class_classifier.partial_fit(target_np_encoded, target_np_labels, np.arange(41))
+                if not unlabeled:
+                    self.class_classifier.partial_fit(target_np_encoded, target_np_labels, np.arange(41))
 
             # Class prediction using PassiveAggressiveClassifier
             source_labels_pred = torch.tensor(self.class_classifier.predict(source_np_encoded))

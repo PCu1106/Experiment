@@ -42,8 +42,8 @@ if __name__ == '__main__':
     output_size = 41
     hidden_sizes = [8, 16, 32]
 
-    data_drop_out = 0.9
-    dnn_model = DNN(input_size, output_size, hidden_sizes, args.work_dir)
+    data_drop_out = 1.0
+    dnn_model = DNN(input_size, output_size, hidden_sizes, work_dir=f'{args.work_dir}_{data_drop_out:.1f}')
     if args.training_source_domain_data:
         dnn_model.load_two_data(args.training_source_domain_data, args.training_target_domain_data, data_drop_out=data_drop_out)
         dnn_model.train_model(model_path, epochs=500)

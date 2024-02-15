@@ -1,15 +1,15 @@
 '''
-python .\DANN_AE_unlabeled.py \
-    --training_source_domain_data D:\Experiment\data\220318\GalaxyA51\wireless_training.csv \
-    --training_target_domain_data D:\Experiment\data\231116\GalaxyA51\wireless_training.csv \
-    --model_path 220318_231116.h5 \
-    --work_dir unlabeled\220318_231116
-python .\DANN_AE_unlabeled.py \
-    --testing_data_list D:\Experiment\data\220318\GalaxyA51\routes \
-                        D:\Experiment\data\231116\GalaxyA51\routes \
-                        D:\Experiment\data\231117\GalaxyA51\routes \
-    --model_path 220318_231116.h5 \
-    --work_dir unlabeled\220318_231116
+python .\DANN_AE_unlabeled.py ^
+    --training_source_domain_data D:\Experiment\data\231116\GalaxyA51\wireless_training.csv ^
+    --training_target_domain_data D:\Experiment\data\231117\GalaxyA51\wireless_training.csv ^
+    --model_path 231116_231117.h5 ^
+    --work_dir unlabeled\231116_231117\122
+python .\DANN_AE_unlabeled.py ^
+    --testing_data_list D:\Experiment\data\220318\GalaxyA51\routes ^
+                        D:\Experiment\data\231116\GalaxyA51\routes ^
+                        D:\Experiment\data\231117\GalaxyA51\routes ^
+    --model_path 231116_231117.h5 ^
+    --work_dir unlabeled\231116_231117\122
 python ..\..\model_comparison\evaluator.py \
     --model_name DANN \
     --directory 220318_231116\12_0.0 \
@@ -81,7 +81,7 @@ if __name__ == "__main__":
     num_classes = 41  # 這裡的數字要根據你的問題設定
     batch_size=32
     epochs=5
-    data_drop_out_list = np.arange(0.9, 0.95, 0.1)
+    data_drop_out_list = np.arange(0.0, 0.05, 0.1)
     
     for data_drop_out in data_drop_out_list:
         # 創建 DANNModel    

@@ -337,7 +337,7 @@ if __name__ == "__main__":
     domain2_result = []
     domain3_result = []
 
-    data_drop_out_list = np.arange(0.9, 0.95, 0.1)
+    data_drop_out_list = np.arange(0.0, 0.05, 0.1)
     
     for data_drop_out in data_drop_out_list:
         # 創建 DANNModel    

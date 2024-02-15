@@ -3,13 +3,13 @@ python .\DANN_unlabeled.py \
     --training_source_domain_data D:\Experiment\data\220318\GalaxyA51\wireless_training.csv \
     --training_target_domain_data D:\Experiment\data\231116\GalaxyA51\wireless_training.csv \
     --model_path 220318_231116.h5 \
-    --work_dir unlabeled\220318_231116
+    --work_dir unlabeled\220318_231116\12
 python .\DANN_unlabeled.py \
     --testing_data_list D:\Experiment\data\220318\GalaxyA51\routes \
                         D:\Experiment\data\231116\GalaxyA51\routes \
                         D:\Experiment\data\231117\GalaxyA51\routes \
     --model_path 220318_231116.h5 \
-    --work_dir unlabeled\220318_231116
+    --work_dir unlabeled\220318_231116\12
 python ..\..\model_comparison\evaluator.py \
     --model_name DANN \
     --directory 220318_231116\12_0.0 \

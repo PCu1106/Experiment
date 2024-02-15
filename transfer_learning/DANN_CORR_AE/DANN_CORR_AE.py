@@ -3,13 +3,13 @@ python .\DANN_CORR_AE.py \
     --training_source_domain_data D:\Experiment\data\220318\GalaxyA51\wireless_training.csv \
     --training_target_domain_data D:\Experiment\data\231116\GalaxyA51\wireless_training.csv \
     --model_path 220318_231116.pth \
-    --work_dir 220318_231116\0.1_10_10
+    --work_dir 220318_231116\0.1_2_2
 python .\DANN_CORR_AE.py \
     --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes \
                         D:\Experiment\data\220318\GalaxyA51\routes \
                         D:\Experiment\data\231117\GalaxyA51\routes \
     --model_path 220318_231116.pth \
-    --work_dir 220318_231116\0.1_10_10
+    --work_dir 220318_231116\0.1_2_2
 python ..\..\model_comparison\evaluator.py \
     --model_name DANN_CORR_AE \
     --directory 220318_231116\0.1_10_0.0 \
@@ -69,9 +69,10 @@ class HistCorrAutoencoderDANNModel(HistCorrDANNModel):
         self.val_total_losses, self.val_label_losses, self.val_domain_losses, self.val_reconstruction_losses = [], [], [], []
         self.val_source_accuracies, self.val_target_accuracies, self.val_total_accuracies = [], [], []
 
-    def train(self, num_epochs=10):
+    def train(self, num_epochs=10, unlabeled=False):
+        unlabeled = unlabeled
         for epoch in range(num_epochs):
-            loss_list, acc_list = self._run_epoch([self.source_train_loader, self.target_train_loader], training=True)
+            loss_list, acc_list = self._run_epoch([self.source_train_loader, self.target_train_loader], training=True, unlabeled=unlabeled)
 
             self.total_losses.append(loss_list[0])
             self.label_losses.append(loss_list[1])
@@ -83,7 +84,7 @@ class HistCorrAutoencoderDANNModel(HistCorrDANNModel):
 
             # Validation
             with torch.no_grad():
-                val_loss_list, val_acc_list = self._run_epoch([self.source_val_loader, self.target_val_loader], training=False)
+                val_loss_list, val_acc_list = self._run_epoch([self.source_val_loader, self.target_val_loader], training=False, unlabeled=unlabeled)
 
                 self.val_total_losses.append(val_loss_list[0])
                 self.val_label_losses.append(val_loss_list[1])
@@ -102,7 +103,7 @@ class HistCorrAutoencoderDANNModel(HistCorrDANNModel):
                 self.save_model()
                 self.best_val_total_loss = self.val_total_losses[-1]
 
-    def _run_epoch(self, data_loader, training=False):
+    def _run_epoch(self, data_loader, training=False, unlabeled=False):
         source_correct_predictions, source_total_samples = 0, 0
         target_correct_predictions, target_total_samples = 0, 0
         # Create infinite iterators over datasets
@@ -130,8 +131,10 @@ class HistCorrAutoencoderDANNModel(HistCorrDANNModel):
             # Classifier loss
             label_loss_source = self.domain_criterion(source_labels_pred, source_labels)
             label_loss_target = self.domain_criterion(target_labels_pred, target_labels)
-            label_loss = (label_loss_source + label_loss_target) / 2
-
+            if unlabeled:
+                label_loss = label_loss_source
+            else:
+                label_loss = (label_loss_source + label_loss_target) / 2
             source_hist = cv2.calcHist([source_encoded_features.detach().numpy().flatten()], [0], None, [100], [0, 1])
             target_hist = cv2.calcHist([target_encoded_features.detach().numpy().flatten()], [0], None, [100], [0, 1])
             domain_loss = self.domain_invariance_loss(source_hist, target_hist)
@@ -218,12 +221,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
     loss_weights = [0.1, 2, 2]
     epoch = 500
-    
+    unlabeled = True
+
     domain1_result = []
     domain2_result = []
     domain3_result = []
 
-    data_drop_out_list = np.arange(0.0, 1.05, 0.1)
+    data_drop_out_list = np.arange(0.0, 0.05, 0.1)
     
     for data_drop_out in data_drop_out_list:
         # 創建 DANNModel    
@@ -233,7 +237,7 @@ if __name__ == "__main__":
         if args.training_source_domain_data and args.training_target_domain_data:
             # 訓練模型
             dann_model.load_train_data(args.training_source_domain_data, args.training_target_domain_data, data_drop_out)
-            dann_model.train(num_epochs=epoch)
+            dann_model.train(num_epochs=epoch, unlabeled=unlabeled)
             dann_model.plot_training_results()
         elif args.testing_data_list:
             testing_data_path_list = args.testing_data_list

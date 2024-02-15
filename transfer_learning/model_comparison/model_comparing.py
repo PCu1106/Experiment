@@ -1,31 +1,66 @@
 '''
 Time Experiment:
-python .\model_comparing.py \
-    --model1_prediction_list D:\Experiment\transfer_learning\DANN\220318_231116\12_0.9\predictions\220318 \
-                             D:\Experiment\transfer_learning\DANN\220318_231116\12_0.9\predictions\231116 \
-    --model2_prediction_list D:\Experiment\transfer_learning\DANN_AE\220318_231116\122_0.9\predictions\220318 \
-                             D:\Experiment\transfer_learning\DANN_AE\220318_231116\122_0.9\predictions\231116 \
-    --model3_prediction_list D:\Experiment\transfer_learning\DANN_CORR\220318_231116\0.1_10_0.9\predictions\220318 \
-                             D:\Experiment\transfer_learning\DANN_CORR\220318_231116\0.1_10_0.9\predictions\231116 \
-    --model4_prediction_list D:\Experiment\transfer_learning\DANN_CORR_AE\220318_231116\0.1_2_2_0.9\predictions\220318 \
-                             D:\Experiment\transfer_learning\DANN_CORR_AE\220318_231116\0.1_2_2_0.9\predictions\231116 \
-    --model5_prediction_list D:\Experiment\transfer_learning\DNN_base\220318_231116\predictions\220318 \
-                             D:\Experiment\transfer_learning\DNN_base\220318_231116\predictions\231116 \
+python .\model_comparing.py ^
+    --model1_prediction_list D:\Experiment\transfer_learning\DANN\220318_231116\12_0.9\predictions\220318 ^
+                             D:\Experiment\transfer_learning\DANN\220318_231116\12_0.9\predictions\231116 ^
+    --model2_prediction_list D:\Experiment\transfer_learning\DANN_AE\220318_231116\122_0.9\predictions\220318 ^
+                             D:\Experiment\transfer_learning\DANN_AE\220318_231116\122_0.9\predictions\231116 ^
+    --model3_prediction_list D:\Experiment\transfer_learning\DANN_CORR\220318_231116\0.1_10_0.9\predictions\220318 ^
+                             D:\Experiment\transfer_learning\DANN_CORR\220318_231116\0.1_10_0.9\predictions\231116 ^
+    --model4_prediction_list D:\Experiment\transfer_learning\DANN_CORR_AE\220318_231116\0.1_2_2_0.9\predictions\220318 ^
+                             D:\Experiment\transfer_learning\DANN_CORR_AE\220318_231116\0.1_2_2_0.9\predictions\231116 ^
+    --model5_prediction_list D:\Experiment\transfer_learning\DNN_base\220318_231116_0.9\predictions\220318 ^
+                             D:\Experiment\transfer_learning\DNN_base\220318_231116_0.9\predictions\231116 ^
+    --model6_prediction_list D:\Experiment\transfer_learning\DANN_baseline\220318_231116\0.1_0.1_10_0.9\predictions\220318 ^
+                             D:\Experiment\transfer_learning\DANN_baseline\220318_231116\0.1_0.1_10_0.9\predictions\231116 ^
+    --experiment_name time_variation
+unlabeled:
+python .\model_comparing.py ^
+    --model1_prediction_list D:\Experiment\transfer_learning\DANN\\unlabeled\220318_231116\12_0.0\predictions\220318 ^
+                             D:\Experiment\transfer_learning\DANN\\unlabeled\220318_231116\12_0.0\predictions\231116 ^
+    --model2_prediction_list D:\Experiment\transfer_learning\DANN_AE\\unlabeled\220318_231116\122_0.0\predictions\220318 ^
+                             D:\Experiment\transfer_learning\DANN_AE\\unlabeled\220318_231116\122_0.0\predictions\231116 ^
+    --model3_prediction_list D:\Experiment\transfer_learning\DANN_CORR\\unlabeled\220318_231116\0.1_10_0.0\predictions\220318 ^
+                             D:\Experiment\transfer_learning\DANN_CORR\\unlabeled\220318_231116\0.1_10_0.0\predictions\231116 ^
+    --model4_prediction_list D:\Experiment\transfer_learning\DANN_CORR_AE\\unlabeled\220318_231116\0.1_2_2_0.0\predictions\220318 ^
+                             D:\Experiment\transfer_learning\DANN_CORR_AE\\unlabeled\220318_231116\0.1_2_2_0.0\predictions\231116 ^
+    --model5_prediction_list D:\Experiment\transfer_learning\DNN_base\220318_231116_1.0\predictions\220318 ^
+                             D:\Experiment\transfer_learning\DNN_base\220318_231116_1.0\predictions\231116 ^
+    --model6_prediction_list D:\Experiment\transfer_learning\DANN_baseline\\unlabeled\220318_231116\0.1_0.1_10_0.0\predictions\220318 ^
+                             D:\Experiment\transfer_learning\DANN_baseline\\unlabeled\220318_231116\0.1_0.1_10_0.0\predictions\231116 ^
     --experiment_name time_variation
 Space Experiment:
-python .\model_comparing.py \
-    --model1_prediction_list D:\Experiment\transfer_learning\DANN\231116_231117\12_0.9\predictions\231116 \
-                             D:\Experiment\transfer_learning\DANN\231116_231117\12_0.9\predictions\231117 \
-    --model2_prediction_list D:\Experiment\transfer_learning\DANN_AE\231116_231117\122_0.9\predictions\231116 \
-                             D:\Experiment\transfer_learning\DANN_AE\231116_231117\122_0.9\predictions\231117 \
-    --model3_prediction_list D:\Experiment\transfer_learning\DANN_CORR\231116_231117\0.1_10_0.9\predictions\231116 \
-                             D:\Experiment\transfer_learning\DANN_CORR\231116_231117\0.1_10_0.9\predictions\231117 \
-    --model4_prediction_list D:\Experiment\transfer_learning\DANN_CORR_AE\231116_231117\0.1_2_2_0.9\predictions\231116 \
-                             D:\Experiment\transfer_learning\DANN_CORR_AE\231116_231117\0.1_2_2_0.9\predictions\231117 \
-    --model5_prediction_list D:\Experiment\transfer_learning\DNN_base\231116_231117\predictions\231116 \
-                             D:\Experiment\transfer_learning\DNN_base\231116_231117\predictions\231117 \
+python .\model_comparing.py ^
+    --model1_prediction_list D:\Experiment\transfer_learning\DANN\231116_231117\12_0.9\predictions\231116 ^
+                             D:\Experiment\transfer_learning\DANN\231116_231117\12_0.9\predictions\231117 ^
+    --model2_prediction_list D:\Experiment\transfer_learning\DANN_AE\231116_231117\122_0.9\predictions\231116 ^
+                             D:\Experiment\transfer_learning\DANN_AE\231116_231117\122_0.9\predictions\231117 ^
+    --model3_prediction_list D:\Experiment\transfer_learning\DANN_CORR\231116_231117\0.1_10_0.9\predictions\231116 ^
+                             D:\Experiment\transfer_learning\DANN_CORR\231116_231117\0.1_10_0.9\predictions\231117 ^
+    --model4_prediction_list D:\Experiment\transfer_learning\DANN_CORR_AE\231116_231117\0.1_2_2_0.9\predictions\231116 ^
+                             D:\Experiment\transfer_learning\DANN_CORR_AE\231116_231117\0.1_2_2_0.9\predictions\231117 ^
+    --model5_prediction_list D:\Experiment\transfer_learning\DNN_base\231116_231117_0.9\predictions\231116 ^
+                             D:\Experiment\transfer_learning\DNN_base\231116_231117_0.9\predictions\231117 ^
+    --model6_prediction_list D:\Experiment\transfer_learning\DANN_baseline\231116_231117\0.1_0.1_10_0.9\predictions\231116 ^
+                             D:\Experiment\transfer_learning\DANN_baseline\231116_231117\0.1_0.1_10_0.9\predictions\231117 ^
+    --experiment_name spatial_variation
+unlabeled:
+python .\model_comparing.py ^
+    --model1_prediction_list D:\Experiment\transfer_learning\DANN\\unlabeled\231116_231117\12_0.0\predictions\231116 ^
+                             D:\Experiment\transfer_learning\DANN\\unlabeled\231116_231117\12_0.0\predictions\231117 ^
+    --model2_prediction_list D:\Experiment\transfer_learning\DANN_AE\\unlabeled\231116_231117\122_0.0\predictions\231116 ^
+                             D:\Experiment\transfer_learning\DANN_AE\\unlabeled\231116_231117\122_0.0\predictions\231117 ^
+    --model3_prediction_list D:\Experiment\transfer_learning\DANN_CORR\\unlabeled\231116_231117\0.1_10_0.0\predictions\231116 ^
+                             D:\Experiment\transfer_learning\DANN_CORR\\unlabeled\231116_231117\0.1_10_0.0\predictions\231117 ^
+    --model4_prediction_list D:\Experiment\transfer_learning\DANN_CORR_AE\\unlabeled\231116_231117\0.1_2_2_0.0\predictions\231116 ^
+                             D:\Experiment\transfer_learning\DANN_CORR_AE\\unlabeled\231116_231117\0.1_2_2_0.0\predictions\231117 ^
+    --model5_prediction_list D:\Experiment\transfer_learning\DNN_base\231116_231117_1.0\predictions\231116 ^
+                             D:\Experiment\transfer_learning\DNN_base\231116_231117_1.0\predictions\231117 ^
+    --model6_prediction_list D:\Experiment\transfer_learning\DANN_baseline\\unlabeled\231116_231117\0.1_0.1_10_0.0\predictions\231116 ^
+                             D:\Experiment\transfer_learning\DANN_baseline\\unlabeled\231116_231117\0.1_0.1_10_0.0\predictions\231117 ^
     --experiment_name spatial_variation
 '''
+
 
 import numpy as np
 import sys
@@ -46,6 +81,7 @@ if __name__ == '__main__':
     parser.add_argument('--model3_prediction_list', nargs='+', type=str, required = True, help='List of model3 prediction paths')
     parser.add_argument('--model4_prediction_list', nargs='+', type=str, required = True, help='List of model4 prediction paths')
     parser.add_argument('--model5_prediction_list', nargs='+', type=str, required = True, help='List of model5 prediction paths')
+    parser.add_argument('--model6_prediction_list', nargs='+', type=str, required = True, help='List of model6 prediction paths')
     parser.add_argument('--experiment_name', type=str, default='', required = True, help='Would show on the pigure name')
 
 
@@ -57,6 +93,7 @@ if __name__ == '__main__':
     model3_mde, model3_error = [], []
     model4_mde, model4_error = [], []
     model5_mde, model5_error = [], []
+    model6_mde, model6_error = [], []
     for model1_prediction in args.model1_prediction_list:
         total_mde, total_errors = evaluator.calculate_mde(model1_prediction) # [scripted_walk mde, stationary mde, freewalk mde]
         model1_error.append(total_errors[1])
@@ -77,14 +114,18 @@ if __name__ == '__main__':
         total_mde, total_errors = evaluator.calculate_mde(model5_prediction)
         model5_mde.append(total_mde[1])
         model5_error.append(total_errors[1])
+    for model6_prediction in args.model6_prediction_list:
+        total_mde, total_errors = evaluator.calculate_mde(model6_prediction)
+        model6_mde.append(total_mde[1])
+        model6_error.append(total_errors[1])
 
     # modify choosen_index to choose which model to show
-    choosen_index = [4, 0, 1, 2]
+    choosen_index = [5, 4, 0, 1, 2, 3]
 
-    model_errors = [model1_error, model2_error, model3_error, model4_error, model5_error]
-    model_mde = [model1_mde, model2_mde, model3_mde, model4_mde, model5_mde]
-    model_names = ['DANN', 'DANN_AE', 'DANN_CORR', 'DANN_CORR_AE', 'DNN']
-    color_list = ['red', 'black', 'purple', 'brown', 'gray']
+    model_errors = [model1_error, model2_error, model3_error, model4_error, model5_error, model6_error]
+    model_mde = [model1_mde, model2_mde, model3_mde, model4_mde, model5_mde, model6_mde]
+    model_names = ['DANN', 'DANN_AE', 'DANN_CORR', 'DANN_CORR_AE', 'DNN', 'Baseline']
+    color_list = ['red', 'black', 'purple', 'brown', 'gray', 'pink']
     model_errors = np.array(model_errors)[choosen_index]
     model_mde = np.array(model_mde)[choosen_index]
     model_names = np.array(model_names)[choosen_index]
@@ -111,7 +152,7 @@ if __name__ == '__main__':
     index = range(len(model_names))  # 每組 model 只有一個長條
 
     # 繪製長條圖
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(10, 6))
     for i, model_name in enumerate(model_names):
         source_index = i
         target_index = i + bar_width
@@ -127,7 +168,7 @@ if __name__ == '__main__':
     # 設定y軸標籤
     plt.ylabel('MDE')
     # 设置Y轴范围
-    plt.ylim(0, 2)
+    plt.ylim(0, 3)
     # 添加單一的 Source Domain 和 Target Domain 圖例
     plt.legend(['Source Domain', 'Target Domain'])
     # 設定x軸刻度
