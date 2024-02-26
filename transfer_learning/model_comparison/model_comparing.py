@@ -124,7 +124,7 @@ if __name__ == '__main__':
 
     model_errors = [model1_error, model2_error, model3_error, model4_error, model5_error, model6_error]
     model_mde = [model1_mde, model2_mde, model3_mde, model4_mde, model5_mde, model6_mde]
-    model_names = ['DANN', 'DANN_AE', 'DANN_CORR', 'DANN_CORR_AE', 'DNN', 'Baseline']
+    model_names = ['DANN', 'DANN_AE', 'DANN_CORR', 'DANN_CORR_AE', 'DNN', 'K. Long et al.']
     color_list = ['red', 'black', 'purple', 'brown', 'gray', 'pink']
     model_errors = np.array(model_errors)[choosen_index]
     model_mde = np.array(model_mde)[choosen_index]

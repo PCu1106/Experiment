@@ -1,18 +1,18 @@
 '''
 python .\DANN_baseline.py ^
-    --training_source_domain_data D:\Experiment\data\220318\GalaxyA51\wireless_training.csv ^
-    --training_target_domain_data D:\Experiment\data\231116\GalaxyA51\wireless_training.csv ^
+    --training_source_domain_data D:\Experiment\data\220318new\GalaxyA51\wireless_training.csv ^
+    --training_target_domain_data D:\Experiment\data\231116new\GalaxyA51\wireless_training.csv ^
     --model_path 220318_231116.pth ^
-    --work_dir unlabeled\220318_231116\0.1_0.1_10
+    --work_dir 220318_231116\0.0_0.1_10
 python .\DANN_baseline.py ^
     --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes ^
                         D:\Experiment\data\220318\GalaxyA51\routes ^
                         D:\Experiment\data\231117\GalaxyA51\routes ^
     --model_path 220318_231116.pth ^
-    --work_dir unlabeled\220318_231116\0.1_0.1_10
+    --work_dir 220318_231116\0.0_0.1_10
 python ..\..\model_comparison\evaluator.py \
     --model_name DANN_CORR \
-    --directory 220318_231116\0.1_10_0.0 \
+    --directory 220318_231116\1.0_0.1_10 \
     --source_domain 220318 \
     --target_domain 231116
 '''
@@ -48,6 +48,9 @@ class PassiveAggressiveModule(nn.Module):
         super(PassiveAggressiveModule, self).__init__()
         self.model = PassiveAggressiveClassifier()
         self.is_fitted = False
+
+    def reset(self):
+        self.model = PassiveAggressiveClassifier()
 
     def forward(self, x):
         # You can define the forward behavior if needed
@@ -152,6 +155,7 @@ class DANNWithCAEAndPA(DANNWithCAE):
                 self.class_classifier.save_model(f'{self.model_save_path}_PA')
                 self.best_val_total_loss = self.val_total_losses[-1]
 
+            self.class_classifier.reset()
             # Update the learning rate scheduler
             # self.scheduler.step()
 
@@ -216,8 +220,6 @@ class DANNWithCAEAndPA(DANNWithCAE):
                 self.optimizer.zero_grad()
                 total_loss.backward()
                 self.optimizer.step()
-
-                
 
             _, source_preds = torch.max(source_labels_pred, 1)
             source_correct_predictions += (source_preds == source_labels).sum().item()
@@ -286,14 +288,14 @@ if __name__ == "__main__":
 
     num_classes = 41
     epochs = 500
-    loss_weights = [0.1, 0.1, 10]
-    unlabeled = True
+    loss_weights = [0.0, 0.1, 10]
+    unlabeled = False
     
     domain1_result = []
     domain2_result = []
     domain3_result = []
 
-    data_drop_out_list = np.arange(0.0, 0.05, 0.1)
+    data_drop_out_list = np.arange(0.9, 0.95, 0.1)
     
     for data_drop_out in data_drop_out_list:
         # 創建 DANNModel    

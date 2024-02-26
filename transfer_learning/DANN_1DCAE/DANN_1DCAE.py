@@ -1,8 +1,8 @@
 '''
-python .\DANN_1DCAE.py \
-    --training_source_domain_data D:\Experiment\data\220318\GalaxyA51\wireless_training.csv \
-    --training_target_domain_data D:\Experiment\data\231116\GalaxyA51\wireless_training.csv \
-    --model_path 220318_231116.pth \
+python .\DANN_1DCAE.py ^
+    --training_source_domain_data D:\Experiment\data\220318\GalaxyA51\wireless_training.csv ^
+    --training_target_domain_data D:\Experiment\data\231116\GalaxyA51\wireless_training.csv ^
+    --model_path 220318_231116.pth ^
     --work_dir 220318_231116\0.1_0.1_10
 python .\DANN_1DCAE.py \
     --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes \
