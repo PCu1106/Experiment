@@ -6,6 +6,7 @@ from sklearn.preprocessing import StandardScaler
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 
 
@@ -15,9 +16,19 @@ class IndoorLocalizationDataLoader:
 
     def load_data(self):
         data = pd.read_csv(os.path.join(self.data_path), header=0)
-        X = data.iloc[:, 1:]
-        y = data['label']
-        return X, y
+        self.X = data.iloc[:, 1:]
+        self.y = data['label']
+        return self.X, self.y
+    
+    def add_data(self, data_path, ratio=1.0):
+        data = pd.read_csv(os.path.join(data_path), header=0)
+        X_new = data.iloc[:, 1:]
+        y_new = data['label']
+        if ratio < 1.0:
+            X_new, _, y_new, _ = train_test_split(X_new, y_new, train_size=ratio, stratify=y_new)
+        self.X = pd.concat([self.X, X_new], ignore_index=True)
+        self.y = pd.concat([self.y, y_new], ignore_index=True)
+        return self.X, self.y
 
     def preprocess_data(self, data, labels, test_size=0.2):
         # Split data
@@ -81,14 +92,19 @@ class IndoorLocalizationDNN:
         self.model = tf.keras.models.load_model(model_path)
 
 if __name__ == '__main__':
-    data_path = r'D:\Experiment\data\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-06-11\wireless_training.csv'
-    data_loader = IndoorLocalizationDataLoader(data_path)
-    data, labels = data_loader.load_data()
+    source_data_path = r'D:\Experiment\data\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-06-11\wireless_training.csv'
+    target_data_path = r'D:\Experiment\data\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-12-11\wireless_training.csv'
+    data_loader = IndoorLocalizationDataLoader(source_data_path)
+    data_loader.load_data()
+    data, labels = data_loader.add_data(target_data_path, ratio=0.1)
+    print(data.shape)
     X_train_scaled, X_val_scaled, y_train, y_val = data_loader.preprocess_data(data, labels)
-    test_data_path = r'D:\Experiment\data\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-06-11\wireless_testing.csv'
-    test_data_loader = IndoorLocalizationDataLoader(test_data_path)
-    X_test_scaled, y_test = test_data_loader.load_data()
-
+    source_test_data_path = r'D:\Experiment\data\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-06-11\wireless_testing.csv'
+    source_test_data_loader = IndoorLocalizationDataLoader(source_test_data_path)
+    source_X_test, source_y_test = source_test_data_loader.load_data()
+    target_test_data_path = r'D:\Experiment\data\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-12-11\wireless_testing.csv'
+    target_test_data_loader = IndoorLocalizationDataLoader(target_test_data_path)
+    target_X_test, target_y_test = target_test_data_loader.load_data()
 
     # Modify labels to be 0-based
     y_train -= 1
@@ -105,12 +121,20 @@ if __name__ == '__main__':
     history = model.train(X_train_scaled, y_train, X_val_scaled, y_val, epochs=10)
     model.plot_loss_and_accuracy_history()
 
-    model.load_model(model_path)
-    predictions = model.predict(X_test_scaled)
-    # Modify labels to be 1-based
-    results = pd.DataFrame({'label': y_test, 'pred': predictions.argmax(axis=1) + 1})
-    results.to_csv('results.csv', index=False)
+    if not os.path.exists('predictions'):
+        os.makedirs('predictions')
 
+    model.load_model(model_path)
+    source_predictions = model.predict(source_X_test)
+    target_predictions = model.predict(target_X_test)
+
+    # Modify labels to be 1-based
+    results = pd.DataFrame({'label': source_y_test, 'pred': source_predictions.argmax(axis=1) + 1})
+    results.to_csv(r'predictions/0611_results.csv', index=False)
+    results = pd.DataFrame({'label': target_y_test, 'pred': target_predictions.argmax(axis=1) + 1})
+    results.to_csv(r'predictions/1211_results.csv', index=False)
     
-    test_loss, test_acc = model.evaluate(X_test_scaled, y_test-1)
-    print(f'Test accuracy: {test_acc}')
+    source_test_loss, source_test_acc = model.evaluate(source_X_test, source_y_test-1)
+    print(f'Source test accuracy: {source_test_acc}')
+    target_test_loss, target_test_acc = model.evaluate(target_X_test, target_y_test-1)
+    print(f'Target test accuracy: {target_test_acc}')
