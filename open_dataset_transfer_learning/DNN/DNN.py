@@ -97,7 +97,6 @@ if __name__ == '__main__':
     data_loader = IndoorLocalizationDataLoader(source_data_path)
     data_loader.load_data()
     data, labels = data_loader.add_data(target_data_path, ratio=0.1)
-    print(data.shape)
     X_train_scaled, X_val_scaled, y_train, y_val = data_loader.preprocess_data(data, labels)
     source_test_data_path = r'D:\Experiment\data\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-06-11\wireless_testing.csv'
     source_test_data_loader = IndoorLocalizationDataLoader(source_test_data_path)
@@ -112,7 +111,6 @@ if __name__ == '__main__':
 
     model_architecture = [
         tf.keras.layers.Dense(128, activation='relu', input_shape=(X_train_scaled.shape[1],)),
-        tf.keras.layers.Dense(64, activation='relu'),
         tf.keras.layers.Dense(64, activation='relu'),
         tf.keras.layers.Dense(49)
     ]
