@@ -91,6 +91,23 @@ if __name__ == '__main__':
 
     # 讀取結果
     for domain in ['0611', '1211']:
+        results = pd.read_csv(f'DANN_CORR/0.1_10_0.9/predictions/{domain}_results.csv')
+
+        # 計算每個預測點的距離誤差
+        errors = []
+        for idx, row in results.iterrows():
+            pred_label = row['pred']
+            pred_coord = label_to_coordinate[pred_label]
+            actual_coord = label_to_coordinate[row['label']]
+            distance_error = np.linalg.norm(np.array(pred_coord) - np.array(actual_coord))
+            errors.append(distance_error)
+
+        # 計算平均距離誤差
+        mean_distance_error = np.mean(errors)
+        print(f'DANN_CORR {domain} MDE: {mean_distance_error}')
+
+    # 讀取結果
+    for domain in ['0611', '1211']:
         results = pd.read_csv(f'DANN_pytorch/unlabeled/1_0_0.9/predictions/{domain}_results.csv')
 
         # 計算每個預測點的距離誤差
@@ -139,3 +156,20 @@ if __name__ == '__main__':
         # 計算平均距離誤差
         mean_distance_error = np.mean(errors)
         print(f'unlabeled DANN0.0 pytorch {domain} MDE: {mean_distance_error}')
+
+    # 讀取結果
+    for domain in ['0611', '1211']:
+        results = pd.read_csv(f'DANN_CORR/unlabeled/0.1_10_0.0/predictions/{domain}_results.csv')
+
+        # 計算每個預測點的距離誤差
+        errors = []
+        for idx, row in results.iterrows():
+            pred_label = row['pred']
+            pred_coord = label_to_coordinate[pred_label]
+            actual_coord = label_to_coordinate[row['label']]
+            distance_error = np.linalg.norm(np.array(pred_coord) - np.array(actual_coord))
+            errors.append(distance_error)
+
+        # 計算平均距離誤差
+        mean_distance_error = np.mean(errors)
+        print(f'unlabeled DANN_CORR {domain} MDE: {mean_distance_error}')
