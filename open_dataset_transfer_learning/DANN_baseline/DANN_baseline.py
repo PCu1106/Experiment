@@ -1,106 +1,110 @@
 '''
-python DANN_1DCAE.py --training_source_domain_data D:\Experiment\data\\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-06-11\wireless_training.csv --training_target_domain_data D:\Experiment\data\\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-12-11\wireless_training.csv --work_dir unlabeled\0.1_0._10
-python .\DANN_1DCAE.py \
-    --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes \
-                        D:\Experiment\data\220318\GalaxyA51\routes \
-                        D:\Experiment\data\231117\GalaxyA51\routes \
-    --model_path 220318_231116.pth \
-    --work_dir 220318_231116\0.1_0.1_10
+python DANN_baseline.py --training_source_domain_data D:\Experiment\data\\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-06-11\wireless_training.csv --training_target_domain_data D:\Experiment\data\\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-12-11\wireless_training.csv
+python .\DANN_baseline.py ^
+    --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes ^
+                        D:\Experiment\data\220318\GalaxyA51\routes ^
+                        D:\Experiment\data\231117\GalaxyA51\routes ^
+    --model_path 220318_231116.pth ^
+    --work_dir 220318_231116\0.0_0.1_10
 python ..\..\model_comparison\evaluator.py \
     --model_name DANN_CORR \
-    --directory 220318_231116\0.1_10_0.0 \
+    --directory 220318_231116\1.0_0.1_10 \
     --source_domain 220318 \
     --target_domain 231116
 '''
-
-import sys
-sys.path.append('..\\DANN_pytorch')
-from DANN_pytorch import DANN, GRL
-import torch.nn.functional as F
+from sklearn.linear_model import PassiveAggressiveClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
 import torch
-import torch.nn as nn
 import torch.optim as optim
-from torchsummary import summary
+import sys
+sys.path.append('..\\DANN_1DCAE')
+from DANN_1DCAE import DANNWithCAE
+sys.path.append('..\\DANN_pytorch')
+from DANN_pytorch import GRL
 from itertools import cycle
-import math
+import torch.nn.functional as F
+import torch.nn as nn
 import os
+from torchsummary import summary
+import math
 import pandas as pd
 import argparse
 import numpy as np
-import matplotlib.pyplot as plt
+import joblib
 
-
-class CAEFeatureExtractor(nn.Module):
+# Custom PyTorch module for PassiveAggressiveClassifier
+class PassiveAggressiveModule(nn.Module):
     def __init__(self):
-        super(CAEFeatureExtractor, self).__init__()
-        self.encoder = nn.Sequential(
-            nn.Conv1d(in_channels=1, out_channels=64, kernel_size=3, stride=2, padding=1),
-            nn.ReLU(),
-            nn.Conv1d(in_channels=64, out_channels=32, kernel_size=3, stride=2, padding=1),
-            nn.ReLU(),
-            nn.Conv1d(in_channels=32, out_channels=8, kernel_size=3, stride=2, padding=1),
-            nn.ReLU(),
-            nn.AdaptiveAvgPool1d(1)  # Global average pooling
-        )
-        self.decoder = nn.Sequential(
-            nn.ConvTranspose1d(in_channels=1, out_channels=32, kernel_size=3, stride=2, padding=1, output_padding=1),
-            nn.ReLU(),
-            nn.ConvTranspose1d(in_channels=32, out_channels=64, kernel_size=3, stride=2, padding=1, output_padding=1),
-            nn.ReLU(),
-            nn.ConvTranspose1d(in_channels=64, out_channels=1, kernel_size=3, stride=2, padding=1, output_padding=1),
-            nn.ReLU(),
-            nn.Linear(64, 147)
-        )
+        super(PassiveAggressiveModule, self).__init__()
+        self.model = PassiveAggressiveClassifier()
+        self.is_fitted = False
 
-    def forward(self, input_data):
-        # Encoder
-        x = input_data.unsqueeze(1)  # Add a channel dimension
-        encoded = self.encoder(x)
+    def reset(self):
+        self.model = PassiveAggressiveClassifier()
 
-        # Latent space
-        encoded = encoded.view(-1, 8)
+    def forward(self, x):
+        # You can define the forward behavior if needed
+        pass
 
-        # Decoder
-        x = encoded.view(-1, 1, 8)
-        decoded = self.decoder(x)
-        decoded = decoded.view(-1, 147)
+    def fit(self, X, y):
+        # Fit the underlying scikit-learn model
+        self.model.fit(X, y)
+        self.is_fitted = True
 
-        return encoded, decoded
+    def partial_fit(self, X, y, classes=None):
+        self.model.partial_fit(X, y, classes=classes)
+        self.is_fitted = True
 
-class DANNWithCAE(DANN):
+    def predict(self, x):
+        # Add a predict method using the underlying scikit-learn model
+        return self.model.predict(x)
+    
+    def save_model(self, model_path):
+        if self.is_fitted:
+            joblib.dump(self.model, model_path)
+        else:
+            print("Error: Model is not fitted yet. Call 'fit' with appropriate arguments before saving.")
+
+    def load_model(self, model_path):
+        if os.path.exists(model_path):
+            self.model = joblib.load(model_path)
+            self.is_fitted = True
+        else:
+            print(f"Error: Model file not found at {model_path}")
+
+class DANNWithCAEAndPA(DANNWithCAE):
     def __init__(self, num_classes, epochs, model_save_path='saved_model.pth', loss_weights=None, work_dir=None):
-        super(DANNWithCAE, self).__init__(num_classes, epochs, model_save_path, loss_weights, work_dir)
+        super(DANNWithCAEAndPA, self).__init__(num_classes, epochs, model_save_path, loss_weights, work_dir)
 
-        # Replace the FeatureExtractor with CAEFeatureExtractor
-        self.feature_extractor = CAEFeatureExtractor()
+        # Replace the ClassClassifier with PassiveAggressiveClassifier
+        self.class_classifier = PassiveAggressiveModule()
 
         # Modify optimizer initialization to include all parameters
         self.optimizer = optim.Adam(
             list(self.feature_extractor.parameters()) +
-            list(self.class_classifier.parameters()) +
             list(self.domain_classifier.parameters()),
             lr=0.001
         )
 
     def _initialize_metrics(self):
-        self.total_losses, self.label_losses, self.domain_losses, self.reconstruction_losses = [], [], [], []
-        self.source_accuracies, self.target_accuracies, self.total_accuracies = [], [], []
-        self.source_domain_accuracies, self.target_domain_accuracies, self.total_domain_accuracies = [], [], []
-        self.val_total_losses, self.val_label_losses, self.val_domain_losses, self.val_reconstruction_losses = [], [], [], []
-        self.val_source_accuracies, self.val_target_accuracies, self.val_total_accuracies = [], [], []
-        self.val_source_domain_accuracies, self.val_target_domain_accuracies, self.val_total_domain_accuracies = [], [], []
+        super()._initialize_metrics()  # Call the base class method
 
-    def forward(self, x, alpha=1.0):
+    def forward(self, x, alpha=1.0, test=False):
         encoded, decoded = self.feature_extractor(x)
 
         # Domain classification loss
         domain_features = GRL.apply(encoded, alpha)
         domain_output = self.domain_classifier(domain_features)
 
-        # Class prediction
-        class_output = self.class_classifier(encoded)
+        class_one_hot = None
+        if test:
+            # Class prediction using PassiveAggressiveClassifier
+            class_labels = torch.tensor(self.class_classifier.predict(encoded.detach().numpy()))
+            # Convert class labels to one-hot encoding
+            class_one_hot = F.one_hot(class_labels.long(), num_classes=self.num_classes).float()
 
-        return class_output, domain_output, decoded
+        return class_one_hot, domain_output, encoded, decoded
 
     def train(self, unlabeled=False):
         for epoch in range(self.epochs):
@@ -139,8 +143,10 @@ class DANNWithCAE(DANN):
                 # Save the model parameters
                 print(f'val_total_loss: {self.val_total_losses[-1]:.4f} < best_val_total_loss: {self.best_val_total_loss:.4f}', end=', ')
                 self.save_model()
+                self.class_classifier.save_model(f'{self.model_save_path}_PA')
                 self.best_val_total_loss = self.val_total_losses[-1]
 
+            self.class_classifier.reset()
             # Update the learning rate scheduler
             # self.scheduler.step()
 
@@ -161,13 +167,32 @@ class DANNWithCAE(DANN):
             target_features, target_labels = next(target_iter)
             
             # Forward pass
-            source_labels_pred, source_domain_output, source_decoded = self.forward(source_features, self.alpha)
-            target_labels_pred, target_domain_output, target_decoded = self.forward(target_features, self.alpha)
+            _, source_domain_output, source_encoded, source_decoded = self.forward(source_features, self.alpha)
+            _, target_domain_output, target_encoded, target_decoded = self.forward(target_features, self.alpha)
 
             # Reconstruction loss
             reconstruction_loss_source = F.mse_loss(source_decoded, source_features)
             reconstruction_loss_target = F.mse_loss(target_decoded, target_features)
             reconstruction_loss = (reconstruction_loss_source + reconstruction_loss_target) / 2
+
+            # Convert PyTorch tensors to NumPy arrays for sklearn
+            source_np_encoded = source_encoded.detach().numpy()
+            source_np_labels = source_labels.numpy()
+            target_np_encoded = target_encoded.detach().numpy()
+            target_np_labels = target_labels.numpy()
+            # Fit PassiveAggressiveClassifier
+            if training:
+                self.class_classifier.partial_fit(source_np_encoded, source_np_labels, np.arange(49))
+                if not unlabeled:
+                    self.class_classifier.partial_fit(target_np_encoded, target_np_labels, np.arange(49))
+
+            # Class prediction using PassiveAggressiveClassifier
+            source_labels_pred = torch.tensor(self.class_classifier.predict(source_np_encoded))
+            target_labels_pred = torch.tensor(self.class_classifier.predict(target_np_encoded))
+            
+            # Convert class labels to one-hot encoding
+            source_labels_pred = F.one_hot(source_labels_pred.long(), num_classes=self.num_classes).float()
+            target_labels_pred = F.one_hot(target_labels_pred.long(), num_classes=self.num_classes).float()
 
             label_loss_source = nn.CrossEntropyLoss()(source_labels_pred, source_labels)
             label_loss_target = nn.CrossEntropyLoss()(target_labels_pred, target_labels)
@@ -217,68 +242,7 @@ class DANNWithCAE(DANN):
                 target_domain_accuracy
             ]
         return loss_list, acc_list
-
-    def plot_training_results(self):
-        epochs_list = np.arange(0, len(self.total_losses), 1)
-        label_losses_values = [loss for loss in self.label_losses]
-        val_label_losses_values = [loss for loss in self.val_label_losses]
-        domain_losses_values = [loss.detach() for loss in self.domain_losses]
-        val_domain_losses_values = [loss.detach() for loss in self.val_domain_losses]
-        reconstruction_losses_values = [loss.detach() for loss in self.reconstruction_losses]
-        val_reconstruction_losses_values = [loss.detach() for loss in self.val_reconstruction_losses]
-
-        plt.figure(figsize=(12, 8))
-        
-        # Subplot for Label Predictor Training Loss (Top Left)
-        plt.subplot(3, 2, 1)
-        plt.plot(epochs_list, label_losses_values, label='Label Loss', color='blue')
-        plt.plot(epochs_list, val_label_losses_values, label='Val Label Loss', color='darkorange')
-        plt.xlabel('Epochs')
-        plt.ylabel('Loss')
-        plt.legend()
-        plt.title('Label Predictor Training Loss')
-
-        # Subplot for Training Accuracy (Top Right)
-        plt.subplot(3, 2, 2)
-        plt.plot(epochs_list, self.total_accuracies, label='Accuracy', color='blue')
-        plt.plot(epochs_list, self.val_total_accuracies, label='Val Accuracy', color='darkorange')
-        plt.xlabel('Epochs')
-        plt.ylabel('Accuracy')
-        plt.legend()
-        plt.title('Training Accuracy')
-
-        # Subplot for Domain Discriminator Training Loss (Bottom Left)
-        plt.subplot(3, 2, 3)
-        plt.plot(epochs_list, domain_losses_values, label='Domain Loss', color='blue')
-        plt.plot(epochs_list, val_domain_losses_values, label='Val Domain Loss', color='darkorange')
-        plt.xlabel('Epochs')
-        plt.ylabel('Loss')
-        plt.legend()
-        plt.title('Domain Discriminator Training Loss')
-
-        # (Bottom Right)
-        plt.subplot(3, 2, 4)
-        plt.plot(epochs_list, self.total_domain_accuracies, label='Accuracy', color='blue')
-        plt.plot(epochs_list, self.val_total_domain_accuracies, label='Val Accuracy', color='darkorange')
-        plt.xlabel('Epochs')
-        plt.ylabel('Accuracy')
-        plt.legend()
-        plt.title('Training Accuracy')
-
-        plt.subplot(3, 2, 5)
-        plt.plot(epochs_list, reconstruction_losses_values, label='Reconstruction Loss', color='blue')
-        plt.plot(epochs_list, val_reconstruction_losses_values, label='Val Reconstruction Loss', color='darkorange')
-        plt.xlabel('Epochs')
-        plt.ylabel('Loss')
-        plt.legend()
-        plt.title('Convolutional Autoencoder Training Loss')
-
-        # Add a title for the entire figure
-        plt.suptitle('Training Curve')
-
-        plt.tight_layout()  # Adjust layout for better spacing
-        plt.savefig('loss_and_accuracy.png')
-
+    
     def generate_predictions(self, model_path):
         self.load_model(model_path)
         prediction_results = {
@@ -288,7 +252,7 @@ class DANNWithCAE(DANN):
         # 進行預測
         with torch.no_grad():
             for test_batch, true_label_batch in self.test_loader:
-                labels_pred, domain_output, decoded = self.forward(test_batch)
+                labels_pred, domain_output, encoded, decoded = self.forward(test_batch, test=True)
                 _, preds = torch.max(labels_pred, 1)
                 predicted_labels = preds + 1  # 加 1 是为了将索引转换为 1 到 41 的标签
                 label = true_label_batch + 1
@@ -296,6 +260,13 @@ class DANNWithCAE(DANN):
                 prediction_results['label'].extend(label.tolist())
                 prediction_results['pred'].extend(predicted_labels.tolist())
         return pd.DataFrame(prediction_results)
+    
+    def load_model(self, model_path):
+        if os.path.exists(model_path):
+            self.load_state_dict(torch.load(model_path))
+            self.class_classifier.load_model(f'{model_path}_PA')
+        else:
+            print(f"Error: Model file not found at {model_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train DANN Model')
@@ -307,20 +278,20 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     num_classes = 49
-    epochs = 100
-    loss_weights = [0.1, 0.1, 10]
-    unlabeled = True
+    epochs = 500
+    loss_weights = [1, 0.1, 0.5]
+    unlabeled = False
     
     domain1_result = []
     domain2_result = []
     domain3_result = []
 
-    data_drop_out_list = np.arange(0.0, 0.05, 0.1)
+    data_drop_out_list = np.arange(0.9, 0.95, 0.1)
     
     for data_drop_out in data_drop_out_list:
         # 創建 DANNModel    
-        dann_model = DANNWithCAE(num_classes, model_save_path=args.model_path, loss_weights=loss_weights, epochs=epochs, work_dir=f'{args.work_dir}_{data_drop_out:.1f}')
-        summary(dann_model, (147,))
+        dann_model = DANNWithCAEAndPA(num_classes, model_save_path=args.model_path, loss_weights=loss_weights, epochs=epochs, work_dir=f'{args.work_dir}_{data_drop_out:.1f}')
+        # summary(dann_model, (7,))
         # 讀取資料
         if args.training_source_domain_data and args.training_target_domain_data:
             # 訓練模型
@@ -333,7 +304,7 @@ if __name__ == "__main__":
             dann_model.load_test_data(r'D:\Experiment\data\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-06-11\wireless_testing.csv')
             with torch.no_grad():
                 for test_batch, true_label_batch in dann_model.test_loader:
-                    labels_pred, _, _ = dann_model.forward(test_batch)
+                    labels_pred, _, _, _ = dann_model.forward(test_batch, test=True)
                     _, preds = torch.max(labels_pred, 1)
                     predicted_labels = preds + 1  # 加 1 是为了将索引转换为 1 到 49 的标签
                     label = true_label_batch + 1
@@ -343,7 +314,7 @@ if __name__ == "__main__":
             dann_model.load_test_data(r'D:\Experiment\data\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-12-11\wireless_testing.csv')
             with torch.no_grad():
                 for test_batch, true_label_batch in dann_model.test_loader:
-                    labels_pred, _, _ = dann_model.forward(test_batch)
+                    labels_pred, _, _, _ = dann_model.forward(test_batch, test=True)
                     _, preds = torch.max(labels_pred, 1)
                     predicted_labels = preds + 1  # 加 1 是为了将索引转换为 1 到 49 的标签
                     label = true_label_batch + 1
@@ -362,4 +333,3 @@ if __name__ == "__main__":
             print('Please specify --training_source_domain_data/--training_target_domain_data or --testing_data_list option.')
 
         os.chdir('..\\..')
-

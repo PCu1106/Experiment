@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
     model_path = args.model_path
     # 在根据参数来执行相应的操作
-    for i in range(1, 10):
+    for i in range(1, 4):
         knn_model = KNN(k = i)
         if args.training_data:
             knn_model.load_data(args.training_data)

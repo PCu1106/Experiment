@@ -48,7 +48,7 @@ class FeatureExtractor(nn.Module):
         super(FeatureExtractor, self).__init__()
         self.layer1 = nn.Linear(147, 128)
         self.relu = nn.ReLU()
-        self.layer2 = nn.Linear(128, 64)
+        self.layer2 = nn.Linear(128, 8)
 
     def forward(self, x):
         x = self.layer1(x)
@@ -60,7 +60,7 @@ class FeatureExtractor(nn.Module):
 class ClassClassifier(nn.Module):
     def __init__(self, num_classes):
         super(ClassClassifier, self).__init__()
-        self.layer3 = nn.Linear(64, num_classes)
+        self.layer3 = nn.Linear(8, num_classes)
 
     def forward(self, x):
         x = self.layer3(x)
@@ -69,7 +69,7 @@ class ClassClassifier(nn.Module):
 class DomainClassifier(nn.Module):
     def __init__(self):
         super(DomainClassifier, self).__init__()
-        self.layer4 = nn.Linear(64, 2)
+        self.layer4 = nn.Linear(8, 2)
 
     def forward(self, x):
         x = self.layer4(x)

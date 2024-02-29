@@ -1,4 +1,5 @@
 import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
 
 label_to_coordinate = {1: (-53.56836, 5.83747), 2: (-50.051947, 5.855995), 3: (-46.452556, 5.869534), 
@@ -19,191 +20,75 @@ label_to_coordinate = {1: (-53.56836, 5.83747), 2: (-50.051947, 5.855995), 3: (-
                        46: (37.993873, 14.508804), 47: (29.037591, 12.318132), 48: (44.93136, 6.314889), 
                        49: (44.816113, 13.54513)}
 
+def count_mdes(dir_list, model_name_list):
+    mdes = {'0611':[], '1211':[]}
+    for dir, model_name in zip(dir_list, model_name_list):
+        # 讀取結果
+        for domain in ['0611', '1211']:
+            results = pd.read_csv(f'{dir}/predictions/{domain}_results.csv')
+
+            # 計算每個預測點的距離誤差
+            errors = []
+            for idx, row in results.iterrows():
+                pred_label = row['pred']
+                pred_coord = label_to_coordinate[pred_label]
+                actual_coord = label_to_coordinate[row['label']]
+                distance_error = np.linalg.norm(np.array(pred_coord) - np.array(actual_coord))
+                errors.append(distance_error)
+
+            # 計算平均距離誤差
+            mean_distance_error = np.mean(errors)
+            print(f'{model_name} {domain} MDE: {mean_distance_error}')
+            mdes[domain].append(mean_distance_error)
+    return mdes
+
+def plot_bar(model_name_list, mdes, title):
+    num_models = len(model_name_list)
+    # 設定長條圖的寬度
+    bar_width = 0.35
+    index = np.arange(num_models)
+
+    # 繪製0611error的長條圖
+    plt.bar(index, mdes['0611'], bar_width, label='0611')
+
+    # 繪製1211error的長條圖
+    plt.bar(index + bar_width, mdes['1211'], bar_width, label='1211')
+
+    # 添加標籤、標題和圖例
+    plt.xlabel('Model')
+    plt.ylabel('Mean Distance Error')
+    plt.title(title)
+    plt.xticks(index + bar_width / 2, model_name_list, rotation=45)
+    plt.legend()
+
+    # 在長條圖上標註數字
+    for i, v in enumerate(mdes['0611']):
+        plt.text(i - 0.1, v + 0.01, f'{v:.2f}', color='black', va='center')
+
+    for i, v in enumerate(mdes['1211']):
+        plt.text(i + bar_width - 0.1, v + 0.01, f'{v:.2f}', color='black', va='center')
+
+    # 顯示圖表
+    plt.tight_layout()
+    plt.savefig(f'{title}.png')
+    plt.clf()
+
+
 if __name__ == '__main__':
-    # 讀取結果
-    for domain in ['0611', '1211']:
-        results = pd.read_csv(f'DNN/predictions/{domain}_results.csv')
+    dir_list = ['DNN', 'DANN_pytorch/DANN/1_0_0.9', 'DANN/DANN_0.9', 'DANN_pytorch/DANN/1_1_0.9', 'DANN_CORR/0.1_10_0.9', 
+                'DANN_1DCAE/DANN_CORR_0.9', 'DANN_baseline/0_1_10_0.9']
+    model_name_list = ['DNN tensorflow', 'DNN pytoch', 'DANN tensorflow', 'DANN pytorch', 'DANN_CORR', 
+                       'DANN_1DCAE', 'K. Long et al.']
+    
+    mdes = count_mdes(dir_list, model_name_list)
+    plot_bar(model_name_list, mdes, 'MDE for Different Models')
 
-        # 計算每個預測點的距離誤差
-        errors = []
-        for idx, row in results.iterrows():
-            pred_label = row['pred']
-            pred_coord = label_to_coordinate[pred_label]
-            actual_coord = label_to_coordinate[row['label']]
-            distance_error = np.linalg.norm(np.array(pred_coord) - np.array(actual_coord))
-            errors.append(distance_error)
-
-        # 計算平均距離誤差
-        mean_distance_error = np.mean(errors)
-        print(f'DNN tensorflow {domain} MDE: {mean_distance_error}')
-
-    # 讀取結果
-    for domain in ['0611', '1211']:
-        results = pd.read_csv(f'DANN_pytorch/DANN/1_0_0.9/predictions/{domain}_results.csv')
-
-        # 計算每個預測點的距離誤差
-        errors = []
-        for idx, row in results.iterrows():
-            pred_label = row['pred']
-            pred_coord = label_to_coordinate[pred_label]
-            actual_coord = label_to_coordinate[row['label']]
-            distance_error = np.linalg.norm(np.array(pred_coord) - np.array(actual_coord))
-            errors.append(distance_error)
-
-        # 計算平均距離誤差
-        mean_distance_error = np.mean(errors)
-        print(f'DNN pytorch {domain} MDE: {mean_distance_error}')
-
-    # 讀取結果
-    for domain in ['0611', '1211']:
-        results = pd.read_csv(f'DANN/DANN_0.9/predictions/{domain}_results.csv')
-
-        # 計算每個預測點的距離誤差
-        errors = []
-        for idx, row in results.iterrows():
-            pred_label = row['pred']
-            pred_coord = label_to_coordinate[pred_label]
-            actual_coord = label_to_coordinate[row['label']]
-            distance_error = np.linalg.norm(np.array(pred_coord) - np.array(actual_coord))
-            errors.append(distance_error)
-
-        # 計算平均距離誤差
-        mean_distance_error = np.mean(errors)
-        print(f'DANN tensorflow {domain} MDE: {mean_distance_error}')
-
-
-    # 讀取結果
-    for domain in ['0611', '1211']:
-        results = pd.read_csv(f'DANN_pytorch/DANN/1_1_0.9/predictions/{domain}_results.csv')
-
-        # 計算每個預測點的距離誤差
-        errors = []
-        for idx, row in results.iterrows():
-            pred_label = row['pred']
-            pred_coord = label_to_coordinate[pred_label]
-            actual_coord = label_to_coordinate[row['label']]
-            distance_error = np.linalg.norm(np.array(pred_coord) - np.array(actual_coord))
-            errors.append(distance_error)
-
-        # 計算平均距離誤差
-        mean_distance_error = np.mean(errors)
-        print(f'DANN pytorch {domain} MDE: {mean_distance_error}')
-
-    # 讀取結果
-    for domain in ['0611', '1211']:
-        results = pd.read_csv(f'DANN_CORR/0.1_10_0.9/predictions/{domain}_results.csv')
-
-        # 計算每個預測點的距離誤差
-        errors = []
-        for idx, row in results.iterrows():
-            pred_label = row['pred']
-            pred_coord = label_to_coordinate[pred_label]
-            actual_coord = label_to_coordinate[row['label']]
-            distance_error = np.linalg.norm(np.array(pred_coord) - np.array(actual_coord))
-            errors.append(distance_error)
-
-        # 計算平均距離誤差
-        mean_distance_error = np.mean(errors)
-        print(f'DANN_CORR {domain} MDE: {mean_distance_error}')
-
-    # 讀取結果
-    for domain in ['0611', '1211']:
-        results = pd.read_csv(f'DANN_1DCAE/DANN_CORR_0.9/predictions/{domain}_results.csv')
-
-        # 計算每個預測點的距離誤差
-        errors = []
-        for idx, row in results.iterrows():
-            pred_label = row['pred']
-            pred_coord = label_to_coordinate[pred_label]
-            actual_coord = label_to_coordinate[row['label']]
-            distance_error = np.linalg.norm(np.array(pred_coord) - np.array(actual_coord))
-            errors.append(distance_error)
-
-        # 計算平均距離誤差
-        mean_distance_error = np.mean(errors)
-        print(f'DANN_1DCAE {domain} MDE: {mean_distance_error}')
-
-    # 讀取結果
-    for domain in ['0611', '1211']:
-        results = pd.read_csv(f'DANN_pytorch/unlabeled/1_0_0.9/predictions/{domain}_results.csv')
-
-        # 計算每個預測點的距離誤差
-        errors = []
-        for idx, row in results.iterrows():
-            pred_label = row['pred']
-            pred_coord = label_to_coordinate[pred_label]
-            actual_coord = label_to_coordinate[row['label']]
-            distance_error = np.linalg.norm(np.array(pred_coord) - np.array(actual_coord))
-            errors.append(distance_error)
-
-        # 計算平均距離誤差
-        mean_distance_error = np.mean(errors)
-        print(f'unlabeled DNN pytorch {domain} MDE: {mean_distance_error}')
-
-    # 讀取結果
-    for domain in ['0611', '1211']:
-        results = pd.read_csv(f'DANN_pytorch/unlabeled/1_1_0.9/predictions/{domain}_results.csv')
-
-        # 計算每個預測點的距離誤差
-        errors = []
-        for idx, row in results.iterrows():
-            pred_label = row['pred']
-            pred_coord = label_to_coordinate[pred_label]
-            actual_coord = label_to_coordinate[row['label']]
-            distance_error = np.linalg.norm(np.array(pred_coord) - np.array(actual_coord))
-            errors.append(distance_error)
-
-        # 計算平均距離誤差
-        mean_distance_error = np.mean(errors)
-        print(f'unlabeled DANN0.9 pytorch {domain} MDE: {mean_distance_error}')
-
-            # 讀取結果
-    for domain in ['0611', '1211']:
-        results = pd.read_csv(f'DANN_pytorch/unlabeled/1_1_0.0/predictions/{domain}_results.csv')
-
-        # 計算每個預測點的距離誤差
-        errors = []
-        for idx, row in results.iterrows():
-            pred_label = row['pred']
-            pred_coord = label_to_coordinate[pred_label]
-            actual_coord = label_to_coordinate[row['label']]
-            distance_error = np.linalg.norm(np.array(pred_coord) - np.array(actual_coord))
-            errors.append(distance_error)
-
-        # 計算平均距離誤差
-        mean_distance_error = np.mean(errors)
-        print(f'unlabeled DANN0.0 pytorch {domain} MDE: {mean_distance_error}')
-
-    # 讀取結果
-    for domain in ['0611', '1211']:
-        results = pd.read_csv(f'DANN_CORR/unlabeled/0.1_10_0.0/predictions/{domain}_results.csv')
-
-        # 計算每個預測點的距離誤差
-        errors = []
-        for idx, row in results.iterrows():
-            pred_label = row['pred']
-            pred_coord = label_to_coordinate[pred_label]
-            actual_coord = label_to_coordinate[row['label']]
-            distance_error = np.linalg.norm(np.array(pred_coord) - np.array(actual_coord))
-            errors.append(distance_error)
-
-        # 計算平均距離誤差
-        mean_distance_error = np.mean(errors)
-        print(f'unlabeled DANN_CORR {domain} MDE: {mean_distance_error}')
-
-    # 讀取結果
-    for domain in ['0611', '1211']:
-        results = pd.read_csv(f'DANN_1DCAE/unlabeled/0.1_0.1_10_0.0/predictions/{domain}_results.csv')
-
-        # 計算每個預測點的距離誤差
-        errors = []
-        for idx, row in results.iterrows():
-            pred_label = row['pred']
-            pred_coord = label_to_coordinate[pred_label]
-            actual_coord = label_to_coordinate[row['label']]
-            distance_error = np.linalg.norm(np.array(pred_coord) - np.array(actual_coord))
-            errors.append(distance_error)
-
-        # 計算平均距離誤差
-        mean_distance_error = np.mean(errors)
-        print(f'unlabeled DANN_1DCAE {domain} MDE: {mean_distance_error}')
+    unlabeled_dir_list = ['DANN_pytorch/unlabeled/1_0_0.9', 'DANN_pytorch/unlabeled/1_1_0.9', 'DANN_pytorch/unlabeled/1_1_0.0', 
+                          'DANN_CORR/unlabeled/0.1_10_0.0', 'DANN_1DCAE/unlabeled/0.1_0.1_10_0.0', 
+                          'DANN_baseline/unlabeled/0_1_10_0.0']
+    unlabeled_model_name_list = ['unlabeled DNN pytorch', 'unlabeled DANN0.9 pytorch', 'unlabeled DANN0.0 pytorch', 
+                                 'unlabeled DANN_CORR', 'unlabeled DANN_1DCAE', 
+                                 'unlabeled K. Long et al.']
+    
+    unabeled_mdes = count_mdes(unlabeled_dir_list, unlabeled_model_name_list)
+    plot_bar(unlabeled_model_name_list, unabeled_mdes, 'MDE for Different Models with Unlabeled data')
