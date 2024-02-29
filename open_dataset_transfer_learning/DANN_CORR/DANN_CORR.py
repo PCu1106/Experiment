@@ -1,9 +1,5 @@
 '''
-python .\DANN_CORR.py ^
-    --training_source_domain_data D:\Experiment\data\231116\GalaxyA51\wireless_training.csv ^
-    --training_target_domain_data D:\Experiment\data\231117\GalaxyA51\wireless_training.csv ^
-    --model_path 231116_231117.pth ^
-    --work_dir unlabeled\231116_231117\0.1_10
+python .\DANN_CORR.py --training_source_domain_data D:\Experiment\data\\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-06-11\wireless_training.csv --training_target_domain_data D:\Experiment\data\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-12-11\wireless_training.csv --work_dir unlabeled\0.1_10
 python .\DANN_CORR.py ^
     --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes ^
                         D:\Experiment\data\220318\GalaxyA51\routes ^
