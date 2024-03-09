@@ -13,6 +13,8 @@ python .\model_comparing.py ^
                              D:\Experiment\transfer_learning\DNN_base\220318_231116_0.9\predictions\231116 ^
     --model6_prediction_list D:\Experiment\transfer_learning\DANN_baseline\220318_231116\0.1_0.1_10_0.9\predictions\220318 ^
                              D:\Experiment\transfer_learning\DANN_baseline\220318_231116\0.1_0.1_10_0.9\predictions\231116 ^
+    --model7_prediction_list D:\Experiment\transfer_learning\AdapLoc\220318_231116\1_0.01_0.9\predictions\220318 ^
+                             D:\Experiment\transfer_learning\AdapLoc\220318_231116\1_0.01_0.9\predictions\231116 ^
     --experiment_name time_variation
 unlabeled:
 python .\model_comparing.py ^
@@ -28,6 +30,8 @@ python .\model_comparing.py ^
                              D:\Experiment\transfer_learning\DNN_base\220318_231116_1.0\predictions\231116 ^
     --model6_prediction_list D:\Experiment\transfer_learning\DANN_baseline\\unlabeled\220318_231116\0.1_0.1_10_0.0\predictions\220318 ^
                              D:\Experiment\transfer_learning\DANN_baseline\\unlabeled\220318_231116\0.1_0.1_10_0.0\predictions\231116 ^
+    --model7_prediction_list D:\Experiment\transfer_learning\AdapLoc\\unlabeled\220318_231116\1_0.01_0.0\predictions\220318 ^
+                             D:\Experiment\transfer_learning\AdapLoc\\unlabeled\220318_231116\1_0.01_0.0\predictions\231116 ^
     --experiment_name time_variation
 Space Experiment:
 python .\model_comparing.py ^
@@ -43,6 +47,8 @@ python .\model_comparing.py ^
                              D:\Experiment\transfer_learning\DNN_base\231116_231117_0.9\predictions\231117 ^
     --model6_prediction_list D:\Experiment\transfer_learning\DANN_baseline\231116_231117\0.1_0.1_10_0.9\predictions\231116 ^
                              D:\Experiment\transfer_learning\DANN_baseline\231116_231117\0.1_0.1_10_0.9\predictions\231117 ^
+    --model7_prediction_list D:\Experiment\transfer_learning\AdapLoc\231116_231117\1_0.01_0.9\predictions\231116 ^
+                             D:\Experiment\transfer_learning\AdapLoc\231116_231117\1_0.01_0.9\predictions\231117 ^
     --experiment_name spatial_variation
 unlabeled:
 python .\model_comparing.py ^
@@ -58,6 +64,8 @@ python .\model_comparing.py ^
                              D:\Experiment\transfer_learning\DNN_base\231116_231117_1.0\predictions\231117 ^
     --model6_prediction_list D:\Experiment\transfer_learning\DANN_baseline\\unlabeled\231116_231117\0.1_0.1_10_0.0\predictions\231116 ^
                              D:\Experiment\transfer_learning\DANN_baseline\\unlabeled\231116_231117\0.1_0.1_10_0.0\predictions\231117 ^
+    --model7_prediction_list D:\Experiment\transfer_learning\AdapLoc\\unlabeled\231116_231117\1_0.01_0.0\predictions\231116 ^
+                             D:\Experiment\transfer_learning\AdapLoc\\unlabeled\231116_231117\1_0.01_0.0\predictions\231117 ^
     --experiment_name spatial_variation
 '''
 
@@ -82,6 +90,7 @@ if __name__ == '__main__':
     parser.add_argument('--model4_prediction_list', nargs='+', type=str, required = True, help='List of model4 prediction paths')
     parser.add_argument('--model5_prediction_list', nargs='+', type=str, required = True, help='List of model5 prediction paths')
     parser.add_argument('--model6_prediction_list', nargs='+', type=str, required = True, help='List of model6 prediction paths')
+    parser.add_argument('--model7_prediction_list', nargs='+', type=str, required = True, help='List of model6 prediction paths')
     parser.add_argument('--experiment_name', type=str, default='', required = True, help='Would show on the pigure name')
 
 
@@ -94,6 +103,7 @@ if __name__ == '__main__':
     model4_mde, model4_error = [], []
     model5_mde, model5_error = [], []
     model6_mde, model6_error = [], []
+    model7_mde, model7_error = [], []
     for model1_prediction in args.model1_prediction_list:
         total_mde, total_errors = evaluator.calculate_mde(model1_prediction) # [scripted_walk mde, stationary mde, freewalk mde]
         model1_error.append(total_errors[1])
@@ -118,14 +128,18 @@ if __name__ == '__main__':
         total_mde, total_errors = evaluator.calculate_mde(model6_prediction)
         model6_mde.append(total_mde[1])
         model6_error.append(total_errors[1])
+    for model7_prediction in args.model7_prediction_list:
+        total_mde, total_errors = evaluator.calculate_mde(model7_prediction)
+        model7_mde.append(total_mde[1])
+        model7_error.append(total_errors[1])
 
     # modify choosen_index to choose which model to show
-    choosen_index = [5, 4, 0, 1, 2, 3]
+    choosen_index = [5, 4, 0, 1, 2, 3, 6]
 
-    model_errors = [model1_error, model2_error, model3_error, model4_error, model5_error, model6_error]
-    model_mde = [model1_mde, model2_mde, model3_mde, model4_mde, model5_mde, model6_mde]
-    model_names = ['DANN', 'DANN_AE', 'DANN_CORR', 'DANN_CORR_AE', 'DNN', 'K. Long et al.']
-    color_list = ['red', 'black', 'purple', 'brown', 'gray', 'pink']
+    model_errors = [model1_error, model2_error, model3_error, model4_error, model5_error, model6_error, model7_error]
+    model_mde = [model1_mde, model2_mde, model3_mde, model4_mde, model5_mde, model6_mde, model7_mde]
+    model_names = ['DANN', 'DANN_AE', 'DANN_CORR', 'DANN_CORR_AE', 'DNN', 'K. Long et al.', 'AdapLoc']
+    color_list = ['red', 'black', 'purple', 'brown', 'gray', 'pink', 'yellow']
     model_errors = np.array(model_errors)[choosen_index]
     model_mde = np.array(model_mde)[choosen_index]
     model_names = np.array(model_names)[choosen_index]

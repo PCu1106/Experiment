@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from brokenaxes import brokenaxes
 
 label_to_coordinate = {1: (-53.56836, 5.83747), 2: (-50.051947, 5.855995), 3: (-46.452556, 5.869534), 
                        4: (-42.853167, 5.883073), 5: (-44.659589, 7.011051), 6: (-44.751032, 11.879306), 
@@ -42,6 +43,26 @@ def count_mdes(dir_list, model_name_list):
             mdes[domain].append(mean_distance_error)
     return mdes
 
+def find_y_lim(mdes):
+    all_values = []
+    for key in mdes:
+        all_values.extend(mdes[key])
+    
+    all_values.sort()
+    
+    max_gap = 0
+    max_gap_start = None
+    max_gap_end = None
+    
+    for i in range(len(all_values) - 1):
+        gap = all_values[i+1] - all_values[i]
+        if gap > max_gap:
+            max_gap = gap
+            max_gap_start = all_values[i]
+            max_gap_end = all_values[i+1]
+            
+    return max_gap_start + 0.1, max_gap_end - 0.1
+
 def plot_bar(model_name_list, mdes, title):
     num_models = len(model_name_list)
     # 設定長條圖的寬度
@@ -49,47 +70,53 @@ def plot_bar(model_name_list, mdes, title):
     index = np.arange(num_models)
     plt.figure(figsize=(14, 6))
 
+    # 创建一个包含中断的坐标轴
+    max_val = max(max(mdes['0611']), max(mdes['1211']))
+    gap_start, gap_end = find_y_lim(mdes)
+    bax = brokenaxes(ylims=((0, gap_start), (gap_end, max_val+1)))
+
     # 繪製0611error的長條圖
-    plt.bar(index, mdes['0611'], bar_width, label='0611')
+    bax.bar(index - bar_width/2, mdes['0611'], bar_width, label='0611')
 
     # 繪製1211error的長條圖
-    plt.bar(index + bar_width, mdes['1211'], bar_width, label='1211')
+    bax.bar(index + bar_width/2, mdes['1211'], bar_width, label='1211')
 
     # 添加標籤、標題和圖例
-    plt.xlabel('Model')
-    plt.ylabel('Mean Distance Error')
-    plt.title(title)
-    plt.xticks(index + bar_width / 2, model_name_list)
-    plt.legend()
+    bax.set_xlabel('Model')
+    bax.set_ylabel('Mean Distance Error')
+    bax.set_title(title)
+    bax.set_xticks(index)
+    bax.set_xticklabels([' ']+model_name_list)
+    bax.legend()
 
     # 在長條圖上標註數字
     for i, v in enumerate(mdes['0611']):
-        plt.text(i - 0.1, v + 0.01, f'{v:.2f}', color='black', va='center')
+        bax.text(i - bar_width, v + 0.01, f'{v:.2f}', color='black', va='center')
 
     for i, v in enumerate(mdes['1211']):
-        plt.text(i + bar_width - 0.1, v + 0.01, f'{v:.2f}', color='black', va='center')
+        bax.text(i, v + 0.01, f'{v:.2f}', color='black', va='center')
 
-    # 顯示圖表
-    plt.tight_layout()
+    # # 顯示圖表
+    # plt.tight_layout()
     plt.savefig(f'{title}.png')
     plt.clf()
 
 
 if __name__ == '__main__':
-    dir_list = ['DANN_pytorch/1_0_0.9', 'DANN_pytorch/DANN/1_1_0.9','DANN_AE/1_2_2_0.9', 'DANN_1DCAE/0.1_0.1_10_0.9', 
-                'DANN_CORR/0.1_10_0.9', 'DANN_CORR_AE/0.1_2_2_0.9', 'DANN_baseline/0_1_10_0.9', 'AdapLoc/1_0.01_0.9']
-    model_name_list = ['DNN', 'DANN', 'DANN_AE', 'DANN_1DCAE',
-                       'DANN_CORR (proposed)', 'DANN_CORR_AE', 'K. Long et al.', 'AdapLoc']
+    dir_list = ['DANN_pytorch/1_0_0.9', 'DANN_pytorch/DANN/1_1_0.9','DANN_AE/1_2_2_0.9', 
+                'DANN_CORR/0.1_10_0.9', 'DANN_CORR_AE/0.1_2_2_0.9', 'AdapLoc/1_0.01_0.9', 'DANN_baseline/0_1_10_0.9']# , 'DANN_1DCAE/0.1_0.1_10_0.9'
+    model_name_list = ['DNN', 'DANN', 'DANN_AE',
+                       'DANN_CORR (proposed)', 'DANN_CORR_AE', 'AdapLoc', 'K. Long et al.']# , 'DANN_1DCAE'
     
     mdes = count_mdes(dir_list, model_name_list)
     plot_bar(model_name_list, mdes, 'MDE for Different Models')
 
     unlabeled_dir_list = ['DANN_pytorch/unlabeled/1_0_0.0', 'DANN_pytorch/unlabeled/1_1_0.0', 'DANN_AE/unlabeled/1_2_2_0.0', 
-                          'DANN_1DCAE/unlabeled/0.1_0.1_10_0.0', 'DANN_CORR/unlabeled/0.1_10_0.0', 'DANN_CORR_AE/unlabeled/0.1_2_2_0.0', 
-                          'DANN_baseline/unlabeled/0_1_10_0.0', 'AdapLoc/unlabeled/1_0.01_0.0']
+                          'DANN_CORR/unlabeled/0.1_10_0.0', 'DANN_CORR_AE/unlabeled/0.1_2_2_0.0', 
+                          'AdapLoc/unlabeled/1_0.01_0.0', 'DANN_baseline/unlabeled/0_1_10_0.0']# 'DANN_1DCAE/unlabeled/0.1_0.1_10_0.0', 
     unlabeled_model_name_list = ['DNN', 'DANN', 'DANN_AE', 
-                                 'DANN_1DCAE', 'DANN_CORR (proposed)', 'DANN_CORR_AE', 
-                                 'K. Long et al.', 'AdapLoc']
+                                 'DANN_CORR (proposed)', 'DANN_CORR_AE', 
+                                 'AdapLoc', 'K. Long et al.']# 'DANN_1DCAE', 
     
     unabeled_mdes = count_mdes(unlabeled_dir_list, unlabeled_model_name_list)
     plot_bar(unlabeled_model_name_list, unabeled_mdes, 'MDE for Different Models with Unlabeled data')
