@@ -47,6 +47,7 @@ def plot_bar(model_name_list, mdes, title):
     # 設定長條圖的寬度
     bar_width = 0.35
     index = np.arange(num_models)
+    plt.figure(figsize=(14, 6))
 
     # 繪製0611error的長條圖
     plt.bar(index, mdes['0611'], bar_width, label='0611')
@@ -58,7 +59,7 @@ def plot_bar(model_name_list, mdes, title):
     plt.xlabel('Model')
     plt.ylabel('Mean Distance Error')
     plt.title(title)
-    plt.xticks(index + bar_width / 2, model_name_list, rotation=45)
+    plt.xticks(index + bar_width / 2, model_name_list)
     plt.legend()
 
     # 在長條圖上標註數字
@@ -75,20 +76,20 @@ def plot_bar(model_name_list, mdes, title):
 
 
 if __name__ == '__main__':
-    dir_list = ['DNN', 'DANN_pytorch/DANN/1_0_0.9', 'DANN/DANN_0.9', 'DANN_pytorch/DANN/1_1_0.9', 'DANN_CORR/0.1_10_0.9', 
-                'DANN_1DCAE/DANN_CORR_0.9', 'DANN_baseline/0_1_10_0.9']
-    model_name_list = ['DNN tensorflow', 'DNN pytoch', 'DANN tensorflow', 'DANN pytorch', 'DANN_CORR', 
-                       'DANN_1DCAE', 'K. Long et al.']
+    dir_list = ['DANN_pytorch/1_0_0.9', 'DANN_pytorch/DANN/1_1_0.9','DANN_AE/1_2_2_0.9', 'DANN_1DCAE/0.1_0.1_10_0.9', 
+                'DANN_CORR/0.1_10_0.9', 'DANN_CORR_AE/0.1_2_2_0.9', 'DANN_baseline/0_1_10_0.9', 'AdapLoc/1_0.01_0.9']
+    model_name_list = ['DNN', 'DANN', 'DANN_AE', 'DANN_1DCAE',
+                       'DANN_CORR (proposed)', 'DANN_CORR_AE', 'K. Long et al.', 'AdapLoc']
     
     mdes = count_mdes(dir_list, model_name_list)
     plot_bar(model_name_list, mdes, 'MDE for Different Models')
 
-    unlabeled_dir_list = ['DANN_pytorch/unlabeled/1_0_0.9', 'DANN_pytorch/unlabeled/1_1_0.9', 'DANN_pytorch/unlabeled/1_1_0.0', 
-                          'DANN_CORR/unlabeled/0.1_10_0.0', 'DANN_1DCAE/unlabeled/0.1_0.1_10_0.0', 
-                          'DANN_baseline/unlabeled/0_1_10_0.0']
-    unlabeled_model_name_list = ['unlabeled DNN pytorch', 'unlabeled DANN0.9 pytorch', 'unlabeled DANN0.0 pytorch', 
-                                 'unlabeled DANN_CORR', 'unlabeled DANN_1DCAE', 
-                                 'unlabeled K. Long et al.']
+    unlabeled_dir_list = ['DANN_pytorch/unlabeled/1_0_0.0', 'DANN_pytorch/unlabeled/1_1_0.0', 'DANN_AE/unlabeled/1_2_2_0.0', 
+                          'DANN_1DCAE/unlabeled/0.1_0.1_10_0.0', 'DANN_CORR/unlabeled/0.1_10_0.0', 'DANN_CORR_AE/unlabeled/0.1_2_2_0.0', 
+                          'DANN_baseline/unlabeled/0_1_10_0.0', 'AdapLoc/unlabeled/1_0.01_0.0']
+    unlabeled_model_name_list = ['DNN', 'DANN', 'DANN_AE', 
+                                 'DANN_1DCAE', 'DANN_CORR (proposed)', 'DANN_CORR_AE', 
+                                 'K. Long et al.', 'AdapLoc']
     
     unabeled_mdes = count_mdes(unlabeled_dir_list, unlabeled_model_name_list)
     plot_bar(unlabeled_model_name_list, unabeled_mdes, 'MDE for Different Models with Unlabeled data')

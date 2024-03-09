@@ -279,7 +279,7 @@ if __name__ == "__main__":
 
     num_classes = 49
     epochs = 500
-    loss_weights = [1, 0.1, 0.5]
+    loss_weights = [0, 0.1, 1]
     unlabeled = False
     
     domain1_result = []

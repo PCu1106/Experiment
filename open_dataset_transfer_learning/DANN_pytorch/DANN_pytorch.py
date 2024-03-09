@@ -354,8 +354,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     num_classes = 49
-    epochs = 100
-    loss_weights = [1, 1]
+    epochs = 500
+    loss_weights = [1, 0]
     unlabeled = True
     
     domain1_result = []
