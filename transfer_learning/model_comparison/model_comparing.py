@@ -134,7 +134,7 @@ if __name__ == '__main__':
         model7_error.append(total_errors[1])
 
     # modify choosen_index to choose which model to show
-    choosen_index = [5, 4, 0, 1, 2, 3, 6]
+    choosen_index = [4, 0, 1, 2, 3, 6, 5]
 
     model_errors = [model1_error, model2_error, model3_error, model4_error, model5_error, model6_error, model7_error]
     model_mde = [model1_mde, model2_mde, model3_mde, model4_mde, model5_mde, model6_mde, model7_mde]
