@@ -1,11 +1,13 @@
 '''
-python AdapLoc.py --training_source_domain_data D:\Experiment\data\\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-06-11\wireless_training.csv --training_target_domain_data D:\Experiment\data\\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-12-11\wireless_training.csv --work_dir unlabeled\0.1_0._10
+python AdapLoc.py --training_source_domain_data D:\Experiment\data\\UM_DSI_DB_v1.0.0_lite\data\tony_data\2019-06-11\wireless_training.csv ^
+                  --training_target_domain_data D:\Experiment\data\\UM_DSI_DB_v1.0.0_lite\data\tony_data\2019-10-09\wireless_training.csv ^
+                  --work_dir 190611_191009\1_0.01
 python .\DANN_1DCAE.py \
     --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes \
                         D:\Experiment\data\220318\GalaxyA51\routes \
                         D:\Experiment\data\231117\GalaxyA51\routes \
     --model_path 220318_231116.pth \
-    --work_dir 220318_231116\0.1_0.1_10
+    --work_dir 220318_231116\1_0.1_10
 python ..\..\model_comparison\evaluator.py \
     --model_name DANN_CORR \
     --directory 220318_231116\0.1_10_0.0 \
@@ -45,7 +47,7 @@ class CNNFeatureExtractor(nn.Module):
             nn.MaxPool1d(2, stride=2),
         )
         self.dnn = nn.Sequential(
-            nn.Linear(576, 512),
+            nn.Linear(672, 512),
             nn.Linear(512, 128)
         )
 
@@ -55,7 +57,7 @@ class CNNFeatureExtractor(nn.Module):
         x = self.cnn(x)
 
         # Latent space
-        x = x.view(-1, 576)
+        x = x.view(-1, 672)
         encoded = self.dnn(x)
 
         return encoded
@@ -250,23 +252,23 @@ class AdapLoc(DANN):
         plt.tight_layout()  # Adjust layout for better spacing
         plt.savefig('loss_and_accuracy.png')
 
-    def generate_predictions(self, model_path):
-        self.load_model(model_path)
-        prediction_results = {
-            'label': [],
-            'pred': []
-        }
-        # 進行預測
+    def generate_predictions(self, file_path, output_path):
+        predictions = {'label': [], 'pred': []}
+        self.load_test_data(file_path)
         with torch.no_grad():
             for test_batch, true_label_batch in self.test_loader:
-                labels_pred, domain_output, decoded = self.forward(test_batch)
+                labels_pred, _ = self.forward(test_batch)
                 _, preds = torch.max(labels_pred, 1)
-                predicted_labels = preds + 1  # 加 1 是为了将索引转换为 1 到 41 的标签
+                predicted_labels = preds + 1  # 加 1 是为了将索引转换为 1 到 49 的标签
                 label = true_label_batch + 1
-                # 將預測結果保存到 prediction_results 中
-                prediction_results['label'].extend(label.tolist())
-                prediction_results['pred'].extend(predicted_labels.tolist())
-        return pd.DataFrame(prediction_results)
+                # 將預測結果保存到 predictions 中
+                predictions['label'].extend(label.tolist())
+                predictions['pred'].extend(predicted_labels.tolist())
+
+        # 将预测结果保存为 CSV 文件
+        results = pd.DataFrame({'label': predictions['label'], 'pred': predictions['pred']})
+        results.to_csv(output_path, index=False)
+        
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train DANN Model')
@@ -280,18 +282,18 @@ if __name__ == "__main__":
     num_classes = 49
     epochs = 100
     loss_weights = [1, 0.01]
-    unlabeled = True
+    unlabeled = False
     
     domain1_result = []
     domain2_result = []
     domain3_result = []
 
-    data_drop_out_list = np.arange(0.0, 0.05, 0.1)
+    data_drop_out_list = np.arange(0.9, 0.95, 0.1)
     
     for data_drop_out in data_drop_out_list:
         # 創建 DANNModel    
         dann_model = AdapLoc(num_classes, model_save_path=args.model_path, loss_weights=loss_weights, epochs=epochs, work_dir=f'{args.work_dir}_{data_drop_out:.1f}')
-        summary(dann_model, (147,))
+        summary(dann_model, (168,))
         # 讀取資料
         if args.training_source_domain_data and args.training_target_domain_data:
             # 訓練模型
@@ -300,35 +302,16 @@ if __name__ == "__main__":
             dann_model.plot_training_results()
         elif args.test:
             dann_model.load_model(args.model_path)
-            source_predictions, target_predictions = {'label': [], 'pred': []}, {'label': [], 'pred': []}
-            dann_model.load_test_data(r'D:\Experiment\data\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-06-11\wireless_testing.csv')
-            with torch.no_grad():
-                for test_batch, true_label_batch in dann_model.test_loader:
-                    labels_pred, _ = dann_model.forward(test_batch)
-                    _, preds = torch.max(labels_pred, 1)
-                    predicted_labels = preds + 1  # 加 1 是为了将索引转换为 1 到 49 的标签
-                    label = true_label_batch + 1
-                    # 將預測結果保存到 prediction_results 中
-                    source_predictions['label'].extend(label.tolist())
-                    source_predictions['pred'].extend(predicted_labels.tolist())
-            dann_model.load_test_data(r'D:\Experiment\data\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-12-11\wireless_testing.csv')
-            with torch.no_grad():
-                for test_batch, true_label_batch in dann_model.test_loader:
-                    labels_pred, _ = dann_model.forward(test_batch)
-                    _, preds = torch.max(labels_pred, 1)
-                    predicted_labels = preds + 1  # 加 1 是为了将索引转换为 1 到 49 的标签
-                    label = true_label_batch + 1
-                    # 將預測結果保存到 prediction_results 中
-                    target_predictions['label'].extend(label.tolist())
-                    target_predictions['pred'].extend(predicted_labels.tolist())
+            testing_file_paths = [
+                        r'D:\Experiment\data\UM_DSI_DB_v1.0.0_lite\data\tony_data\2019-06-11\wireless_testing.csv',
+                        r'D:\Experiment\data\UM_DSI_DB_v1.0.0_lite\data\tony_data\2019-10-09\wireless_testing.csv',
+                        r'D:\Experiment\data\UM_DSI_DB_v1.0.0_lite\data\tony_data\2020-02-19\wireless_testing.csv'
+                    ]
+            output_paths = ['predictions/190611_results.csv', 'predictions/191009_results.csv', 'predictions/200219_results.csv']
             if not os.path.exists('predictions'):
                 os.makedirs('predictions')
-
-            # Modify labels to be 1-based
-            results = pd.DataFrame({'label': source_predictions['label'], 'pred': source_predictions['pred']})
-            results.to_csv(r'predictions/0611_results.csv', index=False)
-            results = pd.DataFrame({'label': target_predictions['label'], 'pred': target_predictions['pred']})
-            results.to_csv(r'predictions/1211_results.csv', index=False)
+            for testing_file_path, output_path in zip(testing_file_paths, output_paths):
+                dann_model.generate_predictions(testing_file_path, output_path)
         else:
             print('Please specify --training_source_domain_data/--training_target_domain_data or --testing_data_list option.')
 

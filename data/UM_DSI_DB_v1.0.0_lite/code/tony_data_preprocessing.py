@@ -35,7 +35,7 @@ for line in lines:
 df1009 = pd.DataFrame(data1009)
 
 # 讀取 2020-02-19 的 rssis.csv 文件
-with open('D:\\Experiment\\data\\UM_DSI_DB_v1.0.0_lite\\data\\site_surveys\\2019-02-19\\rssis.csv', 'r') as file:
+with open('D:\\Experiment\\data\\UM_DSI_DB_v1.0.0_lite\\data\\site_surveys\\2020-02-19\\rssis.csv', 'r') as file:
     lines = file.readlines()
 
 data0219 = []
@@ -46,7 +46,7 @@ for line in lines:
 
 # 將 2020-02-19 的資料轉換為 DataFrame
 df0219 = pd.DataFrame(data0219)
-
+print(df0219.shape)
 # 找出 df0611 中存在但 df1009 中不存在的 AP
 missing_aps1009 = [ap for ap in df0611.columns if ap not in df1009.columns]
 missing_aps0219 = [ap for ap in df0611.columns if ap not in df0219.columns]
@@ -69,7 +69,6 @@ print(df0611.shape)
 # 确保列的顺序和 df0611 一致
 df1009 = df1009[df0611.columns]
 df0219 = df0219[df0611.columns]
-
 # 使用插值處理缺失值
 df0611 = df0611.interpolate(method='linear', limit_direction='both')
 df1009 = df1009.interpolate(method='linear', limit_direction='both')
