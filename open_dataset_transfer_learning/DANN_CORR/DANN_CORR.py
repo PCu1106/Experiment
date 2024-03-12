@@ -1,5 +1,7 @@
 '''
-python .\DANN_CORR.py --training_source_domain_data D:\Experiment\data\\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-06-11\wireless_training.csv --training_target_domain_data D:\Experiment\data\\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-12-11\wireless_training.csv --work_dir unlabeled\0.1_10
+python .\DANN_CORR.py --training_source_domain_data D:\Experiment\data\\UM_DSI_DB_v1.0.0_lite\data\tony_data\2019-06-11\wireless_training.csv ^
+                      --training_target_domain_data D:\Experiment\data\\UM_DSI_DB_v1.0.0_lite\data\tony_data\2020-02-19\wireless_training.csv ^
+                      --work_dir 190611_200219\\unlabeled\0.1_10
 python .\DANN_CORR.py ^
     --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes ^
                         D:\Experiment\data\220318\GalaxyA51\routes ^
@@ -81,7 +83,7 @@ class HistCorrDANNModel:
         self.batch_size = 32
         self.loss_weights = loss_weights
         self.lr = lr
-        self.input_size = 147
+        self.input_size = 168
         self.feature_extractor_neurons = [128, 64]
 
         self._initialize_model()
@@ -269,7 +271,7 @@ class HistCorrDANNModel:
 
     def save_model_architecture(self, file_path='model_architecture'):
         # Create a dummy input for visualization
-        dummy_input = torch.randn(1, 147)  # Assuming input size is (batch_size, 7)
+        dummy_input = torch.randn(1, 168)  # Assuming input size is (batch_size, 7)
 
         # Generate a graph of the model architecture
         graph = make_dot(self.domain_adaptation_model(dummy_input), params=dict(self.domain_adaptation_model.named_parameters()))
@@ -290,24 +292,21 @@ class HistCorrDANNModel:
             features, labels_pred = self.domain_adaptation_model(features)
         return labels_pred
 
-    def generate_predictions(self, model_path):
-        self.load_model(model_path)
-        prediction_results = {
-            'label': [],
-            'pred': []
-        }
-        # 進行預測
-        self.domain_adaptation_model.eval()
+    def generate_predictions(self, file_path, output_path):
+        predictions = {'label': [], 'pred': []}
+        self.load_test_data(file_path)
         with torch.no_grad():
             for test_batch, true_label_batch in self.test_loader:
-                features, labels_pred = self.domain_adaptation_model(test_batch)
+                labels_pred = self.predict(test_batch)
                 _, preds = torch.max(labels_pred, 1)
-                predicted_labels = preds + 1  # 加 1 是为了将索引转换为 1 到 41 的标签
+                predicted_labels = preds + 1  # 加 1 是为了将索引转换为 1 到 49 的标签
                 label = true_label_batch + 1
-                # 將預測結果保存到 prediction_results 中
-                prediction_results['label'].extend(label.tolist())
-                prediction_results['pred'].extend(predicted_labels.tolist())
-        return pd.DataFrame(prediction_results)
+                # 將預測結果保存到 predictions 中
+                predictions['label'].extend(label.tolist())
+                predictions['pred'].extend(predicted_labels.tolist())
+        # 将预测结果保存为 CSV 文件
+        results = pd.DataFrame({'label': predictions['label'], 'pred': predictions['pred']})
+        results.to_csv(output_path, index=False)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train DANN Model')
@@ -339,35 +338,16 @@ if __name__ == "__main__":
             dann_model.plot_training_results()
         elif args.test:
             dann_model.load_model(args.model_path)
-            source_predictions, target_predictions = {'label': [], 'pred': []}, {'label': [], 'pred': []}
-            dann_model.load_test_data(r'D:\Experiment\data\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-06-11\wireless_testing.csv')
-            with torch.no_grad():
-                for test_batch, true_label_batch in dann_model.test_loader:
-                    labels_pred = dann_model.predict(test_batch)
-                    _, preds = torch.max(labels_pred, 1)
-                    predicted_labels = preds + 1  # 加 1 是为了将索引转换为 1 到 49 的标签
-                    label = true_label_batch + 1
-                    # 將預測結果保存到 prediction_results 中
-                    source_predictions['label'].extend(label.tolist())
-                    source_predictions['pred'].extend(predicted_labels.tolist())
-            dann_model.load_test_data(r'D:\Experiment\data\UM_DSI_DB_v1.0.0_lite\data\site_surveys\2019-12-11\wireless_testing.csv')
-            with torch.no_grad():
-                for test_batch, true_label_batch in dann_model.test_loader:
-                    labels_pred = dann_model.predict(test_batch)
-                    _, preds = torch.max(labels_pred, 1)
-                    predicted_labels = preds + 1  # 加 1 是为了将索引转换为 1 到 49 的标签
-                    label = true_label_batch + 1
-                    # 將預測結果保存到 prediction_results 中
-                    target_predictions['label'].extend(label.tolist())
-                    target_predictions['pred'].extend(predicted_labels.tolist())
+            testing_file_paths = [
+                        r'D:\Experiment\data\UM_DSI_DB_v1.0.0_lite\data\tony_data\2019-06-11\wireless_testing.csv',
+                        r'D:\Experiment\data\UM_DSI_DB_v1.0.0_lite\data\tony_data\2019-10-09\wireless_testing.csv',
+                        r'D:\Experiment\data\UM_DSI_DB_v1.0.0_lite\data\tony_data\2020-02-19\wireless_testing.csv'
+                    ]
+            output_paths = ['predictions/190611_results.csv', 'predictions/191009_results.csv', 'predictions/200219_results.csv']
             if not os.path.exists('predictions'):
                 os.makedirs('predictions')
-
-            # Modify labels to be 1-based
-            results = pd.DataFrame({'label': source_predictions['label'], 'pred': source_predictions['pred']})
-            results.to_csv(r'predictions/0611_results.csv', index=False)
-            results = pd.DataFrame({'label': target_predictions['label'], 'pred': target_predictions['pred']})
-            results.to_csv(r'predictions/1211_results.csv', index=False)
+            for testing_file_path, output_path in zip(testing_file_paths, output_paths):
+                dann_model.generate_predictions(testing_file_path, output_path)
         else:
             print('Please specify --training_source_domain_data/--training_target_domain_data or --testing_data_list option.')
 
