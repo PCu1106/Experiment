@@ -1,7 +1,7 @@
 '''
 python DANN_baseline.py --training_source_domain_data D:\Experiment\data\\UM_DSI_DB_v1.0.0_lite\data\tony_data\2019-06-11\wireless_training.csv ^
-                        --training_target_domain_data D:\Experiment\data\\UM_DSI_DB_v1.0.0_lite\data\tony_data\2020-02-19\wireless_training.csv ^
-                        --work_dir 190611_200219\0.1_0.1_10
+                        --training_target_domain_data D:\Experiment\data\\UM_DSI_DB_v1.0.0_lite\data\tony_data\2019-10-09\wireless_training.csv ^
+                        --work_dir 190611_191009\\unlabeled\0.1_0.1_10
 python .\DANN_baseline.py ^
     --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes ^
                         D:\Experiment\data\220318\GalaxyA51\routes ^
@@ -280,13 +280,13 @@ if __name__ == "__main__":
     num_classes = 49
     epochs = 100
     loss_weights = [0.1, 0.1, 1]
-    unlabeled = False
+    unlabeled = True
     
     domain1_result = []
     domain2_result = []
     domain3_result = []
 
-    data_drop_out_list = np.arange(0.9, 0.95, 0.1)
+    data_drop_out_list = np.arange(0.0, 0.05, 0.1)
     
     for data_drop_out in data_drop_out_list:
         # 創建 DANNModel    
