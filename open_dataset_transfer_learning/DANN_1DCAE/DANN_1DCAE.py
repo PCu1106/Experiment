@@ -2,12 +2,7 @@
 python DANN_1DCAE.py --training_source_domain_data D:\Experiment\data\\UM_DSI_DB_v1.0.0_lite\data\tony_data\2019-06-11\wireless_training.csv ^
                      --training_target_domain_data D:\Experiment\data\\UM_DSI_DB_v1.0.0_lite\data\tony_data\2020-02-19\wireless_training.csv ^
                      --work_dir 190611_200219\0.1_0.1_10
-python .\DANN_1DCAE.py \
-    --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes \
-                        D:\Experiment\data\220318\GalaxyA51\routes \
-                        D:\Experiment\data\231117\GalaxyA51\routes \
-    --model_path 220318_231116.pth \
-    --work_dir 220318_231116\0.1_0.1_10
+python DANN_1DCAE.py --test --work_dir 190611_200219\0.1_0.1_10
 python ..\..\model_comparison\evaluator.py \
     --model_name DANN_CORR \
     --directory 220318_231116\0.1_10_0.0 \

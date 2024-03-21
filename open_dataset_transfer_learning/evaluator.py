@@ -69,7 +69,7 @@ def plot_bar(model_name_list, mdes, title, domain_name):
     # 設定長條圖的寬度
     bar_width = 0.35
     index = np.arange(num_models)
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(12, 6))
 
     # 创建一个包含中断的坐标轴
     max_val = max(max(mdes[domain_name["source"]]), max(mdes[domain_name["target"]]))
@@ -88,7 +88,7 @@ def plot_bar(model_name_list, mdes, title, domain_name):
     bax.set_title(title)
     bax.set_xticks(index)
     bax.set_xticklabels([' ']+model_name_list)
-    bax.legend()
+    bax.legend(loc='upper left')
 
     # 在長條圖上標註數字
     for i, v in enumerate(mdes[domain_name["source"]]):
@@ -106,22 +106,22 @@ def plot_bar(model_name_list, mdes, title, domain_name):
 if __name__ == '__main__':
     # dir_list = ['DANN_pytorch/1_0_0.9', 'DANN_pytorch/DANN/1_1_0.9','DANN_AE/1_2_2_0.9', 
     #             'DANN_CORR/0.1_10_0.9', 'DANN_CORR_AE/0.1_2_2_0.9', 'AdapLoc/1_0.01_0.9', 'DANN_baseline/0_1_10_0.9']# , 'DANN_1DCAE/0.1_0.1_10_0.9'
-    domain_name = {"source": '190611', "target":'191009'}
+    domain_name = {"source": '190611', "target":'200219'}
     domain_dir = f'{domain_name["source"]}_{domain_name["target"]}'
-    dir_list = [f'DANN_pytorch/{domain_dir}/1_0_0.9', f'DANN_pytorch/{domain_dir}/1_1_0.9', f'DANN_AE/{domain_dir}/1_2_2_0.9', 
+    dir_list = [f'DANN_pytorch/{domain_dir}/1_0_0.9', f'DANN_pytorch/{domain_dir}/1_1_0.9', f'DANN_AE/{domain_dir}/1_2_2_0.9', f'DANN_1DCAE/{domain_dir}/0.1_0.1_10_0.9', 
                 f'DANN_CORR/{domain_dir}/0.1_10_0.9', f'DANN_CORR_AE/{domain_dir}/0.1_2_2_0.9', f'AdapLoc/{domain_dir}/1_0.01_0.9', f'DANN_baseline/{domain_dir}/0.1_0.1_10_0.9']
-    model_name_list = ['DNN', 'DANN', 'DANN_AE',
-                       'DANN_CORR', 'DANN_CORR_AE', 'AdapLoc', 'K. Long et al.']# , 'DANN_1DCAE'
+    model_name_list = ['DNN', 'DANN', 'DANN_AE', 'DANN_1DCAE', 
+                       'DANN_CORR', 'DANN_CORR_AE', 'AdapLoc', 'K. Long et al.']
     
     mdes = count_mdes(dir_list, model_name_list, domain_name)
     plot_bar(model_name_list, mdes, 'MDE for Different Models', domain_name)
 
     unlabeled_dir_list = [f'DANN_pytorch/{domain_dir}/unlabeled/1_0_0.0', f'DANN_pytorch/{domain_dir}/unlabeled/1_1_0.0', f'DANN_AE/{domain_dir}/unlabeled/1_2_2_0.0', 
-                          f'DANN_CORR/{domain_dir}/unlabeled/0.1_10_0.0', f'DANN_CORR_AE/{domain_dir}/unlabeled/0.1_2_2_0.0', 
+                          f'DANN_1DCAE/{domain_dir}/unlabeled/0.1_0.1_10_0.0', f'DANN_CORR/{domain_dir}/unlabeled/0.1_10_0.0', f'DANN_CORR_AE/{domain_dir}/unlabeled/0.1_2_2_0.0', 
                           f'AdapLoc/{domain_dir}/unlabeled/1_0.01_0.0', f'DANN_baseline/{domain_dir}/unlabeled/0.1_0.1_10_0.0']# 'DANN_1DCAE/unlabeled/0.1_0.1_10_0.0', 
-    unlabeled_model_name_list = ['DNN', 'DANN', 'DANN_AE', 
+    unlabeled_model_name_list = ['DNN', 'DANN', 'DANN_AE', 'DANN_1DCAE', 
                                  'DANN_CORR', 'DANN_CORR_AE', 
-                                 'AdapLoc', 'K. Long et al.']# 'DANN_1DCAE', 
+                                 'AdapLoc', 'K. Long et al.']
     
     unabeled_mdes = count_mdes(unlabeled_dir_list, unlabeled_model_name_list, domain_name)
     plot_bar(unlabeled_model_name_list, unabeled_mdes, 'MDE for Different Models with Unlabeled data', domain_name)

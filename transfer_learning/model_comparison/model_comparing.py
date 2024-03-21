@@ -15,6 +15,8 @@ python .\model_comparing.py ^
                              D:\Experiment\transfer_learning\DANN_baseline\220318_231116\0.1_0.1_10_0.9\predictions\231116 ^
     --model7_prediction_list D:\Experiment\transfer_learning\AdapLoc\220318_231116\1_0.01_0.9\predictions\220318 ^
                              D:\Experiment\transfer_learning\AdapLoc\220318_231116\1_0.01_0.9\predictions\231116 ^
+    --model8_prediction_list D:\Experiment\transfer_learning\DANN_1DCAE\220318_231116\0.1_0.1_10_0.9\predictions\220318 ^
+                             D:\Experiment\transfer_learning\DANN_1DCAE\220318_231116\0.1_0.1_10_0.9\predictions\231116 ^
     --experiment_name time_variation
 unlabeled:
 python .\model_comparing.py ^
@@ -32,6 +34,8 @@ python .\model_comparing.py ^
                              D:\Experiment\transfer_learning\DANN_baseline\\unlabeled\220318_231116\0.1_0.1_10_0.0\predictions\231116 ^
     --model7_prediction_list D:\Experiment\transfer_learning\AdapLoc\\unlabeled\220318_231116\1_0.01_0.0\predictions\220318 ^
                              D:\Experiment\transfer_learning\AdapLoc\\unlabeled\220318_231116\1_0.01_0.0\predictions\231116 ^
+    --model8_prediction_list D:\Experiment\transfer_learning\DANN_1DCAE\\unlabeled\220318_231116\0.1_0.1_10_0.0\predictions\220318 ^
+                             D:\Experiment\transfer_learning\DANN_1DCAE\\unlabeled\220318_231116\0.1_0.1_10_0.0\predictions\231116 ^
     --experiment_name time_variation
 Space Experiment:
 python .\model_comparing.py ^
@@ -49,6 +53,8 @@ python .\model_comparing.py ^
                              D:\Experiment\transfer_learning\DANN_baseline\231116_231117\0.1_0.1_10_0.9\predictions\231117 ^
     --model7_prediction_list D:\Experiment\transfer_learning\AdapLoc\231116_231117\1_0.01_0.9\predictions\231116 ^
                              D:\Experiment\transfer_learning\AdapLoc\231116_231117\1_0.01_0.9\predictions\231117 ^
+    --model8_prediction_list D:\Experiment\transfer_learning\DANN_1DCAE\231116_231117\0.1_0.1_10_0.9\predictions\231116 ^
+                             D:\Experiment\transfer_learning\DANN_1DCAE\231116_231117\0.1_0.1_10_0.9\predictions\231117 ^
     --experiment_name spatial_variation
 unlabeled:
 python .\model_comparing.py ^
@@ -66,6 +72,8 @@ python .\model_comparing.py ^
                              D:\Experiment\transfer_learning\DANN_baseline\\unlabeled\231116_231117\0.1_0.1_10_0.0\predictions\231117 ^
     --model7_prediction_list D:\Experiment\transfer_learning\AdapLoc\\unlabeled\231116_231117\1_0.01_0.0\predictions\231116 ^
                              D:\Experiment\transfer_learning\AdapLoc\\unlabeled\231116_231117\1_0.01_0.0\predictions\231117 ^
+    --model8_prediction_list D:\Experiment\transfer_learning\DANN_1DCAE\\unlabeled\231116_231117\0.1_0.1_10_0.0\predictions\231116 ^
+                             D:\Experiment\transfer_learning\DANN_1DCAE\\unlabeled\231116_231117\0.1_0.1_10_0.0\predictions\231117 ^
     --experiment_name spatial_variation
 '''
 
@@ -90,7 +98,8 @@ if __name__ == '__main__':
     parser.add_argument('--model4_prediction_list', nargs='+', type=str, required = True, help='List of model4 prediction paths')
     parser.add_argument('--model5_prediction_list', nargs='+', type=str, required = True, help='List of model5 prediction paths')
     parser.add_argument('--model6_prediction_list', nargs='+', type=str, required = True, help='List of model6 prediction paths')
-    parser.add_argument('--model7_prediction_list', nargs='+', type=str, required = True, help='List of model6 prediction paths')
+    parser.add_argument('--model7_prediction_list', nargs='+', type=str, required = True, help='List of model7 prediction paths')
+    parser.add_argument('--model8_prediction_list', nargs='+', type=str, required = True, help='List of model8 prediction paths')
     parser.add_argument('--experiment_name', type=str, default='', required = True, help='Would show on the pigure name')
 
 
@@ -104,6 +113,7 @@ if __name__ == '__main__':
     model5_mde, model5_error = [], []
     model6_mde, model6_error = [], []
     model7_mde, model7_error = [], []
+    model8_mde, model8_error = [], []
     for model1_prediction in args.model1_prediction_list:
         total_mde, total_errors = evaluator.calculate_mde(model1_prediction) # [scripted_walk mde, stationary mde, freewalk mde]
         model1_error.append(total_errors[1])
@@ -132,14 +142,18 @@ if __name__ == '__main__':
         total_mde, total_errors = evaluator.calculate_mde(model7_prediction)
         model7_mde.append(total_mde[1])
         model7_error.append(total_errors[1])
+    for model8_prediction in args.model8_prediction_list:
+        total_mde, total_errors = evaluator.calculate_mde(model8_prediction)
+        model8_mde.append(total_mde[1])
+        model8_error.append(total_errors[1])
 
     # modify choosen_index to choose which model to show
-    choosen_index = [4, 0, 1, 2, 3, 6, 5]
+    choosen_index = [4, 0, 1, 7, 2, 3, 6, 5]
 
-    model_errors = [model1_error, model2_error, model3_error, model4_error, model5_error, model6_error, model7_error]
-    model_mde = [model1_mde, model2_mde, model3_mde, model4_mde, model5_mde, model6_mde, model7_mde]
-    model_names = ['DANN', 'DANN_AE', 'DANN_CORR', 'DANN_CORR_AE', 'DNN', 'K. Long et al.', 'AdapLoc']
-    color_list = ['red', 'black', 'purple', 'brown', 'gray', 'pink', 'yellow']
+    model_errors = [model1_error, model2_error, model3_error, model4_error, model5_error, model6_error, model7_error, model8_error]
+    model_mde = [model1_mde, model2_mde, model3_mde, model4_mde, model5_mde, model6_mde, model7_mde, model8_mde]
+    model_names = ['DANN', 'DANN_AE', 'DANN_CORR', 'DANN_CORR_AE', 'DNN', 'K. Long et al.', 'AdapLoc', 'DANN_1DCAE']
+    color_list = ['red', 'black', 'purple', 'brown', 'gray', 'pink', 'yellow', 'steelblue']
     model_errors = np.array(model_errors)[choosen_index]
     model_mde = np.array(model_mde)[choosen_index]
     model_names = np.array(model_names)[choosen_index]
@@ -166,7 +180,7 @@ if __name__ == '__main__':
     index = range(len(model_names))  # 每組 model 只有一個長條
 
     # 繪製長條圖
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(12, 6))
     for i, model_name in enumerate(model_names):
         source_index = i
         target_index = i + bar_width
