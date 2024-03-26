@@ -40,7 +40,9 @@ def analyzing_dataset(datasets, sample_size):
 
         # 计算直方图之间的相关性
         correlations = []
-        for target_hist in hist_list:
+        for i, target_hist in enumerate(hist_list):
+            if i == 0:
+                continue
             correlation = cv2.compareHist(hist_list[0], target_hist, cv2.HISTCMP_CORREL)
             correlations.append(correlation)
         
@@ -49,23 +51,24 @@ def analyzing_dataset(datasets, sample_size):
         plt.plot(correlations, label=key)
         # Adding dataset index numbers
         for i, correlation in enumerate(correlations):
-            plt.text(i, correlation, f"{correlation:.2f}", ha='right')
+            plt.text(i, correlation, f"{correlation:.3f}", ha='right')
         
 
 
 
-file_list1 = ['../231116/GalaxyA51/wireless_training.csv', '../231218/GalaxyA51/wireless_training.csv', '../240117_troy/GalaxyA51/wireless_training.csv', '../240217_troy/GalaxyA51/wireless_training.csv', '../240319/GalaxyA51/wireless_training.csv']
-feature_selection1 = ['Beacon_1', 'Beacon_2', 'Beacon_3', 'Beacon_4', 'Beacon_5', 'Beacon_6', 'Beacon_7']
-file_list2 = ['../231116/GalaxyA51/wireless_training.csv', '../231218/GalaxyA51/wireless_training.csv', '../240117/GalaxyA51/wireless_training.csv', '../240217/GalaxyA51/wireless_training.csv', '../240319/GalaxyA51/wireless_training.csv']
+file_list1 = ['../231116/GalaxyA51/wireless_training.csv', '../231116/GalaxyA51/wireless_training.csv', '../231218/GalaxyA51/wireless_training.csv', '../240117_troy/GalaxyA51/wireless_training.csv', '../240217_troy/GalaxyA51/wireless_training.csv', '../240319/GalaxyA51/wireless_training.csv']
+feature_selection1 = ['Beacon_1', 'Beacon_2', 'Beacon_3']
+file_list2 = ['../231116/GalaxyA51/wireless_training.csv', '../231116/GalaxyA51/wireless_training.csv', '../231218/GalaxyA51/wireless_training.csv', '../240117/GalaxyA51/wireless_training.csv', '../240217/GalaxyA51/wireless_training.csv', '../240319/GalaxyA51/wireless_training.csv']
 feature_selection2 = ['Beacon_5', 'Beacon_6', 'Beacon_7']
-dir_list3 = ['UM_DSI_DB_v1.0.0_lite/data/tony_data/2019-06-11', 'UM_DSI_DB_v1.0.0_lite/data/tony_data/2019-10-09', 'UM_DSI_DB_v1.0.0_lite/data/tony_data/2020-02-19']
+dir_list3 = ['UM_DSI_DB_v1.0.0_lite/data/tony_data/2019-06-11', 'UM_DSI_DB_v1.0.0_lite/data/tony_data/2019-06-11', 'UM_DSI_DB_v1.0.0_lite/data/tony_data/2019-10-09', 'UM_DSI_DB_v1.0.0_lite/data/tony_data/2020-02-19']
 feature_selection3 = [] # use all feature
 datasets1 = {'Time variation': (file_list1, feature_selection1), 'Spatial variaton': (file_list1, feature_selection2)}
 folder_path = 'UM_DSI_DB'
 file_names = os.listdir(folder_path)
+file_names = ['data_2019-06-11.csv'] + file_names
 file_names_with_prefix = ['UM_DSI_DB/' + file_name for file_name in file_names]
 datasets2 = {'UM_DSI_DB': (file_names_with_prefix, [])}
-dates_only = [file_name[-14:-4] for file_name in file_names_with_prefix]
+dates_only = [file_name[-14:-4] for file_name in file_names_with_prefix][1:]
 
 print(file_names_with_prefix)
 print(dates_only)
