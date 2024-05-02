@@ -3,7 +3,8 @@ import h5py
 import pandas as pd
 import numpy as np
 
-date_list = ['2021-11-20', '2021-12-20', '2022-07-21', '2022-06-21', '2022-10-21', '2022-11-21', '2022-12-21']
+# date_list = ['2021-11-20', '2021-12-20', '2022-07-21', '2022-06-21', '2022-10-21', '2022-11-21', '2022-12-21']
+date_list = [f'week{i}' for i in range(1, 38)]
 
 def convert_h5_to_csv(h5_file, output_folder, reference_bssids, label_map):
     # 讀取HDF5文件
@@ -42,7 +43,8 @@ def convert_h5_to_csv(h5_file, output_folder, reference_bssids, label_map):
 
         testing_set = pd.DataFrame(columns=df.columns)
         for label in df['label'].unique():
-            sample = df[df['label'] == label].sample(n=int(len(df[df['label'] == label])/10))
+            sample_num = int(len(df[df['label'] == label])/10)
+            sample = df[df['label'] == label].sample(n=sample_num if sample_num != 0 else 1)
             testing_set = pd.concat([testing_set, sample], ignore_index=True)
             df = df.drop(sample.index)
             print(f"  Label{label} samples: {len(df[df['label'] == label])}")
@@ -54,10 +56,12 @@ def convert_h5_to_csv(h5_file, output_folder, reference_bssids, label_map):
         df.to_csv(output_file, index=False)
 
 # 資料夾路徑
-folder_path = 'Mall'
+# folder_path = 'Mall'
+folder_path = 'OfficeP1+P2'
 
 # 讀取Mall_1_training.h5，獲取參考bssids和座標對應的label_map
-reference_file = os.path.join(folder_path, 'Mall_1_training.h5')
+# reference_file = os.path.join(folder_path, 'Mall_1_training.h5')
+reference_file = os.path.join(folder_path, 'OfficeP1+P2_1_training.h5')
 with h5py.File(reference_file, 'r') as hdf5_data:
     reference_bssids = [bssid.decode('utf-8') for bssid in hdf5_data['bssids'][:]]
     cdns = hdf5_data['cdns'][:]
@@ -66,7 +70,8 @@ with h5py.File(reference_file, 'r') as hdf5_data:
 
 # 將每個.h5檔案轉換成csv檔案
 for i, date in enumerate(date_list):
-    training_file = os.path.join(folder_path, f'Mall_{i+1}_training.h5')
+    # training_file = os.path.join(folder_path, f'Mall_{i+1}_training.h5')
+    training_file = os.path.join(folder_path, f'OfficeP1+P2_{i+1}_training.h5')
     output_folder = os.path.join(folder_path, date)
 
     # 建立輸出資料夾

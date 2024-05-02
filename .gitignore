@@ -1,5 +1,5 @@
 AE_KNN.py
 DNN_dropout/
 __pycache__/
-data/MTLocData/**/*.h5
-data/MTLocData/**/*.csv
+data/MTLocData/Mall/**/*.h5
+data/MTLocData/Mall/**/*.csv
