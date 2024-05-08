@@ -1,0 +1,13 @@
+
+Package releases:
+
+2.2 Changing ids to have 10 digits for all months (months 1-10 had previously only 9 digits).
+
+2.1 Added: Identification of 16 APs (columns in the database) that correspond to the 4 wireless devices closest to the collection area, and their characteristics.
+
+2.0 Added: 10 months of additional measurements (September 2017 - June 2018) of collection using a Samsung Galaxy S3 smartphone.
+	Added: 1 month of additional measurements (June 2018) of collection using a Samsung Galaxy A5 (2017) smartphone.
+	Modified: New rows added to the original dataset (June 2016 - August 2017) that corresponds to the APs detected in the new period of data collection (September 2017 - June 2018). Values have been filled with the default non-detected value, +100dBm.
+	
+1.0 - Original 15 months (June 2016 - August 2017) of collection using a Samsung Galaxy S3 smartphone.
+	- Scripts 
