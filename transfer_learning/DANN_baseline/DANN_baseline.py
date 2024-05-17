@@ -1,15 +1,15 @@
 '''
 python .\DANN_baseline.py ^
-    --training_source_domain_data D:\Experiment\data\220318new\GalaxyA51\wireless_training.csv ^
-    --training_target_domain_data D:\Experiment\data\231116new\GalaxyA51\wireless_training.csv ^
-    --model_path 220318_231116.pth ^
-    --work_dir 220318_231116\0.0_0.1_10
+    --training_source_domain_data D:\Experiment\data\231116\GalaxyA51\wireless_training.csv ^
+    --training_target_domain_data D:\Experiment\data\231117\GalaxyA51\wireless_training.csv ^
+    --model_path 231116_231117.pth ^
+    --work_dir 231116_231117\0.1_0.1_10
 python .\DANN_baseline.py ^
     --testing_data_list D:\Experiment\data\231116\GalaxyA51\routes ^
                         D:\Experiment\data\220318\GalaxyA51\routes ^
                         D:\Experiment\data\231117\GalaxyA51\routes ^
-    --model_path 220318_231116.pth ^
-    --work_dir 220318_231116\0.0_0.1_10
+    --model_path 231116_231117.pth ^
+    --work_dir 231116_231117\0.1_0.1_10
 python ..\..\model_comparison\evaluator.py \
     --model_name DANN_CORR \
     --directory 220318_231116\1.0_0.1_10 \
@@ -191,9 +191,9 @@ class DANNWithCAEAndPA(DANNWithCAE):
             target_np_labels = target_labels.numpy()
             # Fit PassiveAggressiveClassifier
             if training:
-                self.class_classifier.partial_fit(source_np_encoded, source_np_labels, np.arange(41))
                 if not unlabeled:
                     self.class_classifier.partial_fit(target_np_encoded, target_np_labels, np.arange(41))
+                self.class_classifier.partial_fit(source_np_encoded, source_np_labels, np.arange(41))
 
             # Class prediction using PassiveAggressiveClassifier
             source_labels_pred = torch.tensor(self.class_classifier.predict(source_np_encoded))
@@ -288,7 +288,7 @@ if __name__ == "__main__":
 
     num_classes = 41
     epochs = 500
-    loss_weights = [0.0, 0.1, 10]
+    loss_weights = [0.1, 0.1, 10]
     unlabeled = False
     
     domain1_result = []
