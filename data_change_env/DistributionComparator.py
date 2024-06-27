@@ -5,6 +5,7 @@ import cv2
 import sys
 import argparse
 import os
+import csv
 
 class DistributionComparator:
     def __init__(self, file1, file2, bins):
@@ -20,8 +21,8 @@ class DistributionComparator:
 
 
     def plot_histograms(self, fig_name):
-        plt.hist(self.rssi1, bins=self.bins, alpha=0.5, label=self.label1)
-        plt.hist(self.rssi2, bins=self.bins, alpha=0.5, label=self.label2)
+        self.n1, self.bins1, _ = plt.hist(self.rssi1, bins=self.bins, alpha=0.5, label=self.label1)
+        self.n2, self.bins2, _ = plt.hist(self.rssi2, bins=self.bins, alpha=0.5, label=self.label2)
         plt.legend(loc='upper right')
         plt.xlabel('RSSI')
         plt.ylabel('Frequency')
@@ -29,6 +30,16 @@ class DistributionComparator:
         plt.savefig(fig_name)
         plt.clf()
         # plt.show()
+
+    def save_histo_csv(self, name=""):
+        # 合併 bin 邊界，確保它們一致
+        bins = self.bins1 if len(self.bins1) > len(self.bins2) else self.bins2
+        with open(f'{name}_histogram_data.csv', 'w', newline='') as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerow(['Bin Start', 'Bin End', 'Count Data 1', 'Count Data 2'])
+            for i in range(len(self.n1)):
+                count2 = self.n2[i] if i < len(self.n2) else 0  # 確保兩個數據集的 bin 數量一致
+                csvwriter.writerow([bins[i], bins[i+1], self.n1[i], count2])
 
     def compare_histograms(self):
         hist1, _ = np.histogram(self.rssi1, bins=self.bins, range=(-100, 0))
@@ -68,6 +79,13 @@ class DistributionComparator:
         plt.clf()
 
         return mae/(7-len(skip))
+    
+    def print_analysis(self):
+        print()
+        print(f'mean1: {np.mean(self.rssi1)}')
+        print(f'std1: {np.std(self.rssi1)}')
+        print(f'mean2: {np.mean(self.rssi2)}')
+        print(f'std2: {np.std(self.rssi2)}')
     
     
 
@@ -202,6 +220,8 @@ if __name__ == '__main__':
         print(f"change AP position {i}", end=' ')
         if args.histogram:
             comparator.plot_histograms(f"change AP position {i}")
+            comparator.save_histo_csv(f"change_AP_position_{i}")
+            comparator.print_analysis()
             similarity = comparator.compare_histograms()
             print(f"Histogram Similarity: {similarity}")
         if args.APmae:
