@@ -280,7 +280,7 @@ class DANN(nn.Module):
         print(f"Model parameters saved to {self.model_save_path}")
 
     def plot_training_results(self):
-        epochs_list = np.arange(0, len(self.total_losses), 1)
+        
         label_losses_values = [loss for loss in self.label_losses]
         val_label_losses_values = [loss for loss in self.val_label_losses]
         domain_losses_values = [loss.detach() for loss in self.domain_losses]

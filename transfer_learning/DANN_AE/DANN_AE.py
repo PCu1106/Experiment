@@ -110,7 +110,7 @@ class AutoencoderDANNModel(DANNModel):
         )
 
         # Plot training history
-        self.plot_training_history(history, model_path)
+        # self.plot_training_history(history, model_path)
 
         return history
     
@@ -152,7 +152,7 @@ class AutoencoderDANNModel(DANNModel):
         )
 
         # Plot training history
-        self.plot_training_history(history, model_path)
+        # self.plot_training_history(history, model_path)
 
         return history
     
@@ -198,7 +198,7 @@ class AutoencoderDANNModel(DANNModel):
         )
 
         # Plot training history
-        self.plot_training_history(history, model_path)
+        # self.plot_training_history(history, model_path)
 
         return history
 
@@ -293,6 +293,8 @@ if __name__ == "__main__":
             dann_model.load_data(args.training_source_domain_data, args.training_target_domain_data, data_drop_out)
             # 訓練模型
             history = dann_model.train(args.model_path, batch_size, epochs)
+            # Plot training history
+            dann_model.plot_training_history(history, args.model_path)
         elif args.testing_data_list:
             testing_data_path_list = args.testing_data_list
             for testing_data_path in testing_data_path_list:
