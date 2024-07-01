@@ -58,9 +58,9 @@ class AEFeatureExtractor(nn.Module):
         decoded = self.decoder(encoded)
         return encoded, decoded
 
-class DANNWithCAE(DANN):
+class DANNWithAE(DANN):
     def __init__(self, num_classes, epochs, model_save_path='saved_model.pth', loss_weights=None, work_dir=None):
-        super(DANNWithCAE, self).__init__(num_classes, epochs, model_save_path, loss_weights, work_dir)
+        super(DANNWithAE, self).__init__(num_classes, epochs, model_save_path, loss_weights, work_dir)
 
         # Replace the FeatureExtractor with CAEFeatureExtractor
         self.feature_extractor = AEFeatureExtractor()
@@ -309,7 +309,7 @@ if __name__ == "__main__":
     
     for data_drop_out in data_drop_out_list:
         # 創建 DANNModel    
-        dann_model = DANNWithCAE(num_classes, model_save_path=args.model_path, loss_weights=loss_weights, epochs=epochs, work_dir=f'{args.work_dir}_{data_drop_out:.1f}')
+        dann_model = DANNWithAE(num_classes, model_save_path=args.model_path, loss_weights=loss_weights, epochs=epochs, work_dir=f'{args.work_dir}_{data_drop_out:.1f}')
         summary(dann_model, (168,))
         # 讀取資料
         if args.training_source_domain_data and args.training_target_domain_data:
