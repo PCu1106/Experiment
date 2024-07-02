@@ -53,6 +53,7 @@ class Evaluator:
 
         # 绘制CDF图
         plt.plot(bin_edges[:-1], cdf, label=label, color=color)
+        return cdf, bin_edges
 
     def record_walk_cdf(self, errors, csv_file_path):
         x = np.arange(0, 8.2, 0.2) # 0~8m

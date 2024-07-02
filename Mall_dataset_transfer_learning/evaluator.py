@@ -32,6 +32,35 @@ def count_mdes(dir_list, model_name_list, domain_name):
             mdes[domain].append(mean_distance_error)
     return mdes
 
+def calculate_mde(prediction_data_path):
+    errors = []
+    mde = 0
+    predict_file = pd.read_csv(f'{prediction_data_path}')
+    for i in range(len(predict_file)):
+        pred_coord = label_to_coordinate[predict_file['pred'].iloc[i]]
+        actual_coord = label_to_coordinate[predict_file['label'].iloc[i]]
+        de = np.linalg.norm(np.array(pred_coord) - np.array(actual_coord))
+        errors.append(de)
+        mde += de
+    mde = mde / len(predict_file)
+    return mde, errors
+
+def plot_cdf(errors, label, color, max_error=20.0, bin_width=0.4):
+    # 设置CDF图的范围和分辨率
+    min_error = 0.0
+    max_error = max_error
+    bin_width = bin_width
+
+    # 创建直方图
+    hist, bin_edges = np.histogram(errors, bins=np.arange(min_error, max_error + bin_width, bin_width), density=True)
+
+    # 计算CDF
+    cdf = np.cumsum(hist) * bin_width
+
+    # 绘制CDF图
+    plt.plot(bin_edges[:-1], cdf, label=label, color=color)
+    return cdf, bin_edges
+
 def find_y_lim(mdes):
     all_values = []
     for key in mdes:
