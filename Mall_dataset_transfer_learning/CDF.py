@@ -48,13 +48,16 @@ if __name__ == '__main__':
         _, errors = evaluator.calculate_mde(model_prediction)
         model_errors.append(errors)
 
+    # Calculate the maximum error across all models
+    max_error = max(max(errors) for errors in model_errors)
+
     model_names = ['DNN', 'DANN', 'DANN_AE', 'DANN_1DCAE', 'AdapLoc', 'FusionDANN', 'HistLoc']
     color_list = ['red', 'black', 'purple', 'brown', 'gray', 'pink', 'yellow', 'steelblue']
     for j in range(len(model_errors)):
-        cdf, bin_edges = evaluator.plot_cdf(model_errors[j], model_names[j], color_list[j], 60.0, 2.0)
+        cdf, bin_edges = evaluator.plot_cdf(model_errors[j], model_names[j], color_list[j], max_error=120, bin_width=max_error/100)
         cdfs.append(cdf)
     plt.title(f'{args.experiment_name} CDF of Errors of Target Domain')
-    plt.xlabel('Error')
+    plt.xlabel('Distance Error (m)')
     plt.ylabel('Cumulative Probability')
     plt.legend()
     plt.savefig(f"CDF/{args.experiment_name}.png")
@@ -63,6 +66,6 @@ if __name__ == '__main__':
     print(cdfs)
     with open(f"CDF/{args.experiment_name}.csv", mode='w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['Error'] + list(bin_edges))
+        writer.writerow(['Distance Error (m)'] + list(bin_edges))
         for i, label in enumerate(model_names):
             writer.writerow([label] + list(cdfs[i]))

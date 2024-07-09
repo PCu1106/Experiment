@@ -64,6 +64,7 @@ def plot_cdf(errors, label, color, max_error=20.0, bin_width=0.4):
     bin_width = bin_width
 
     # 创建直方图
+    print(errors)
     hist, bin_edges = np.histogram(errors, bins=np.arange(min_error, max_error + bin_width, bin_width), density=True)
 
     # 计算CDF

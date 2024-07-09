@@ -39,11 +39,11 @@ class Evaluator:
     def euclidean_distance(self, p1, p2):
         return np.sqrt((p1[0]-p2[0])*(p1[0]-p2[0])+(p1[1]-p2[1])*(p1[1]-p2[1])) * 0.6
 
-    def plot_cdf(self, errors, label, color):
+    def plot_cdf(self, errors, label, color, max_error=8.0, bin_width=0.1):
         # 设置CDF图的范围和分辨率
         min_error = 0.0
-        max_error = 8.0
-        bin_width = 0.1
+        max_error = max_error
+        bin_width = bin_width
 
         # 创建直方图
         hist, bin_edges = np.histogram(errors, bins=np.arange(min_error, max_error + bin_width, bin_width), density=True)
@@ -55,8 +55,8 @@ class Evaluator:
         plt.plot(bin_edges[:-1], cdf, label=label, color=color)
         return cdf, bin_edges
 
-    def record_walk_cdf(self, errors, csv_file_path):
-        x = np.arange(0, 8.2, 0.2) # 0~8m
+    def record_walk_cdf(self, errors, csv_file_path, max_error, bin_width):
+        x = np.arange(0, max_error, bin_width)
         # 判斷CSV文件是否存在
         if not os.path.exists(csv_file_path):
             # 如果文件不存在，写入头部信息
@@ -74,7 +74,7 @@ class Evaluator:
                 prob.append(result / len(errors_pd))
             writer.writerow(prob)
 
-    def calculate_mde(self, prediction_data_path):
+    def calculate_mde(self, prediction_data_path, max_error=8.2, bin_width=0.2):
         print('Calculate MDE...')
         total_mde = []
         total_errors = []
@@ -91,7 +91,7 @@ class Evaluator:
             mde = mde / len(predict_file)
             total_mde.append(mde)
             total_errors.append(errors)
-            self.record_walk_cdf(errors, f'{walk_str}_cdf.csv')
+            self.record_walk_cdf(errors, f'{walk_str}_cdf.csv', max_error, bin_width)
             
         print(total_mde)
         print(f'average MDE: {sum(total_mde) / len(total_mde)}')
